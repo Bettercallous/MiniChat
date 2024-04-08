@@ -34,6 +34,46 @@ void Server::init() {
     signal(SIGINT, receiveSignal);
     signal(SIGQUIT, receiveSignal);
 
+    createServerSocket();
     std::cout << ">>> SERVER STARTED <<<" << std::endl;
     std::cout << "Waiting for connections..." << std::endl;
+}
+
+void Server::createServerSocket() {
+    _serverSocketFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (_serverSocketFd == -1)
+        throw std::runtime_error("Error: failed to create socket");
+
+    int optval = 1;
+    if (setsockopt(_serverSocketFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1)
+        throw std::runtime_error("Error: setsockopt() failed");
+
+    if (fcntl(_serverSocketFd, F_SETFL, O_NONBLOCK) == -1)
+        throw std::runtime_error("Error: fcntl() failed");
+
+    bindServerSocket();
+
+    if (listen(_serverSocketFd, SOMAXCONN) == -1)
+        throw std::runtime_error("Error: listen() failed");
+
+    addPollfd(_serverSocketFd, POLLIN, 0);
+
+}
+
+void Server::bindServerSocket() {
+    struct sockaddr_in sa;
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(_port);
+    sa.sin_addr.s_addr = INADDR_ANY;
+    if (bind(_serverSocketFd, (struct sockaddr*)&sa, sizeof(sa)) == -1) {
+        throw std::runtime_error("Error: failed to bind socket");
+    }
+}
+
+void Server::addPollfd(int fd, short events, short revents) {
+    struct pollfd newPollfd;
+    newPollfd.fd = fd;
+    newPollfd.events = events;
+    newPollfd.revents = revents;
+    _fds.push_back(newPollfd);
 }
