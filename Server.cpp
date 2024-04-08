@@ -39,6 +39,25 @@ void Server::init() {
     std::cout << "Waiting for connections..." << std::endl;
 }
 
+void Server::run() {
+    while (!_signal) {
+        int ret = poll(&_fds[0], _fds.size(), -1);
+        if (ret == -1)
+            throw std::runtime_error("Error: poll() failed");
+
+        for (size_t i = 0; i < _fds.size(); ++i) {
+            if (_fds[i].revents & POLLIN) {
+                if (_fds[i].fd == _serverSocketFd)
+                    // handle new client connection here
+                    continue;
+                else
+                    // handle existing client incoming data here
+                    continue;
+            }
+        }
+    }
+}
+
 void Server::createServerSocket() {
     _serverSocketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (_serverSocketFd == -1)
@@ -57,7 +76,6 @@ void Server::createServerSocket() {
         throw std::runtime_error("Error: listen() failed");
 
     addPollfd(_serverSocketFd, POLLIN, 0);
-
 }
 
 void Server::bindServerSocket() {

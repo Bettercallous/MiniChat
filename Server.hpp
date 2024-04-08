@@ -23,11 +23,11 @@ class Server {
         void parseArgs(int ac, char **av);
         static void receiveSignal(int signum);
         void init();
+        void run();
 
         void createServerSocket();
         void bindServerSocket();
         void addPollfd(int fd, short events, short revents);
-
 };
 
 #endif
