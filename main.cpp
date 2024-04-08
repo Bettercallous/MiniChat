@@ -6,6 +6,7 @@ int main(int ac, char **av)
 
     try {
         server.parseArgs(ac, av);
+        server.init();
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         return 1;

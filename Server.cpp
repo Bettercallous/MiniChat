@@ -1,5 +1,7 @@
 #include "Server.hpp"
 
+bool Server::_signal = false;
+
 Server::Server() {}
 
 Server::~Server() {}
@@ -21,4 +23,17 @@ void Server::parseArgs(int ac, char **av) {
 
     this->_port = _port;
     this->_password = pwd;
+}
+
+void Server::receiveSignal(int signum) {
+    _signal = true;
+    (void)signum;
+}
+
+void Server::init() {
+    signal(SIGINT, receiveSignal);
+    signal(SIGQUIT, receiveSignal);
+
+    std::cout << ">>> SERVER STARTED <<<" << std::endl;
+    std::cout << "Waiting for connections..." << std::endl;
 }
