@@ -12,5 +12,6 @@ int main(int ac, char **av)
         std::cerr << e.what() << std::endl;
         return 1;
     }
+    std::cout << ">>> SERVER CLOSED <<<" << std::endl;
     return 0;
 }

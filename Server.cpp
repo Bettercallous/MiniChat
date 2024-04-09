@@ -48,8 +48,7 @@ void Server::run() {
         for (size_t i = 0; i < _fds.size(); ++i) {
             if (_fds[i].revents & POLLIN) {
                 if (_fds[i].fd == _serverSocketFd)
-                    // handle new client connection here
-                    continue;
+                    handleClientConnection();
                 else
                     // handle existing client incoming data here
                     continue;
@@ -94,4 +93,22 @@ void Server::addPollfd(int fd, short events, short revents) {
     newPollfd.events = events;
     newPollfd.revents = revents;
     _fds.push_back(newPollfd);
+}
+
+void Server::handleClientConnection() {
+    for (size_t i = 0; i < _fds.size(); ++i) {
+        if (_fds[i].fd == _serverSocketFd && (_fds[i].revents & POLLIN)) {
+            struct sockaddr_in client_addr;
+            socklen_t clientAddrSize = sizeof(sockaddr_in);
+            int newFd = accept(_serverSocketFd, (struct sockaddr *)&client_addr, &clientAddrSize);
+            if (newFd == -1) {
+                throw std::runtime_error("Error: accept() failed");
+            }
+
+            addPollfd(newFd, POLLIN, 0);
+            _clients.push_back(Client(newFd, inet_ntoa((client_addr.sin_addr))));
+
+            std::cout << "Client <" << newFd << "> Connected" << std::endl;
+        }
+    }
 }

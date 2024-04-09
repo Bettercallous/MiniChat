@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <vector>
 #include <poll.h>
+#include "Client.hpp"
 
 class Server {
     private:
@@ -16,6 +17,7 @@ class Server {
         static bool _signal;
         std::string _password;
         std::vector<struct pollfd> _fds;
+        std::vector<Client> _clients;
     public:
         Server();
         ~Server();
@@ -28,6 +30,7 @@ class Server {
         void createServerSocket();
         void bindServerSocket();
         void addPollfd(int fd, short events, short revents);
+        void handleClientConnection();
 };
 
 #endif
