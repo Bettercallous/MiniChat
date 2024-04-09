@@ -9,6 +9,7 @@
 #include <vector>
 #include <poll.h>
 #include "Client.hpp"
+#define BUFFER_SIZE 1024
 
 class Server {
     private:
@@ -31,6 +32,7 @@ class Server {
         void bindServerSocket();
         void addPollfd(int fd, short events, short revents);
         void handleClientConnection();
+        void handleClientData(int fd);
 };
 
 #endif

@@ -50,8 +50,7 @@ void Server::run() {
                 if (_fds[i].fd == _serverSocketFd)
                     handleClientConnection();
                 else
-                    // handle existing client incoming data here
-                    continue;
+                    handleClientData(_fds[i].fd);
             }
         }
     }
@@ -110,5 +109,23 @@ void Server::handleClientConnection() {
 
             std::cout << "Client <" << newFd << "> Connected" << std::endl;
         }
+    }
+}
+
+void Server::handleClientData(int fd) {
+    char buffer[BUFFER_SIZE] = {0};
+    
+    // Receive the data
+    ssize_t bytes = recv(fd, buffer, BUFFER_SIZE - 1 , 0);
+    
+    // Check if the client disconnected
+    if (bytes <= 0) { 
+        std::cout << "Client <" << fd << "> Disconnected" << std::endl;
+        // cleanups here
+    } else {
+        buffer[bytes] = '\0';
+        std::cout << "Client <" << fd << "> Data: " << buffer;
+
+        // parse, check, and handle the received data here
     }
 }
