@@ -12,6 +12,7 @@ class Client {
         Client(int fd, std::string addr);
         ~Client();
 
+        int getFd() const;
 };
 
 #endif

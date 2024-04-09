@@ -33,6 +33,7 @@ class Server {
         void addPollfd(int fd, short events, short revents);
         void handleClientConnection();
         void handleClientData(int fd);
+        void clientCleanup(int fd);
 };
 
 #endif

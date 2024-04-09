@@ -121,11 +121,27 @@ void Server::handleClientData(int fd) {
     // Check if the client disconnected
     if (bytes <= 0) { 
         std::cout << "Client <" << fd << "> Disconnected" << std::endl;
-        // cleanups here
+        clientCleanup(fd);
     } else {
         buffer[bytes] = '\0';
         std::cout << "Client <" << fd << "> Data: " << buffer;
 
         // parse, check, and handle the received data here
+    }
+}
+
+void Server::clientCleanup(int fd) {
+    for (std::vector<pollfd>::iterator it = _fds.begin(); it != _fds.end(); ++it) {
+        if (it->fd == fd) {
+            _fds.erase(it);
+            break;
+        }
+    }
+
+    for (std::vector<Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+        if (it->getFd() == fd) {
+            _clients.erase(it);
+            break;
+        }
     }
 }
