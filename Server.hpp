@@ -9,6 +9,7 @@
 #include <vector>
 #include <poll.h>
 #include "Client.hpp"
+#include <cstring>
 #define BUFFER_SIZE 1024
 
 class Server {

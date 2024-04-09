@@ -113,20 +113,37 @@ void Server::handleClientConnection() {
 }
 
 void Server::handleClientData(int fd) {
-    char buffer[BUFFER_SIZE] = {0};
-    
-    // Receive the data
-    ssize_t bytes = recv(fd, buffer, BUFFER_SIZE - 1 , 0);
-    
-    // Check if the client disconnected
-    if (bytes <= 0) { 
+    std::string command;
+    char buffer[BUFFER_SIZE];
+    memset(buffer, 0, sizeof(buffer));
+
+    ssize_t bytesRead;
+    while ((bytesRead = recv(fd, buffer, BUFFER_SIZE - 1, 0)) > 0) {
+        bool foundEof = false;
+        for (ssize_t i = 0; i < bytesRead; ++i) {
+            if (buffer[i] == '\n') {
+                foundEof = true;
+                break;
+            }
+        }
+
+        if (!foundEof) {
+            buffer[bytesRead] = '\0';
+            command += buffer;
+        } else {
+            command.append(buffer, bytesRead - 1);
+            std::cout << "Received data from client " << fd << ": " << command << std::endl;
+            // process the command here
+            break;
+        }
+    }
+
+    if (bytesRead == 0) {
         std::cout << "Client <" << fd << "> Disconnected" << std::endl;
         clientCleanup(fd);
-    } else {
-        buffer[bytes] = '\0';
-        std::cout << "Client <" << fd << "> Data: " << buffer;
-
-        // parse, check, and handle the received data here
+    } else if (bytesRead == -1) {
+        std::cerr << "Error reading data from client <" << fd << ">" << std::endl;
+        clientCleanup(fd);
     }
 }
 
@@ -134,6 +151,7 @@ void Server::clientCleanup(int fd) {
     for (std::vector<pollfd>::iterator it = _fds.begin(); it != _fds.end(); ++it) {
         if (it->fd == fd) {
             _fds.erase(it);
+            close(fd);
             break;
         }
     }
