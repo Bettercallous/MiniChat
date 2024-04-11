@@ -9,6 +9,7 @@ int main(int ac, char **av)
         server.init();
         server.run();
     } catch (std::exception& e) {
+        server.closeFds();
         std::cerr << e.what() << std::endl;
         return 1;
     }

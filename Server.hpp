@@ -35,6 +35,7 @@ class Server {
         void handleClientConnection();
         void handleClientData(int fd);
         void clientCleanup(int fd);
+        void closeFds();
 };
 
 #endif

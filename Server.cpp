@@ -54,6 +54,7 @@ void Server::run() {
             }
         }
     }
+    closeFds();
 }
 
 void Server::createServerSocket() {
@@ -162,4 +163,17 @@ void Server::clientCleanup(int fd) {
             break;
         }
     }
+}
+
+void Server::closeFds() {
+    for (size_t i = 0; i < _clients.size(); i++){
+        int fd = _clients[i].getFd();
+        std::cout << "Client <" << fd << "> Disconnected" << std::endl;
+        close(fd);
+    }
+
+    if (_serverSocketFd != -1)
+        close(_serverSocketFd);
+
+    _fds.clear();
 }
