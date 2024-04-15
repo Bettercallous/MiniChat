@@ -118,7 +118,7 @@ void Server::handleClientConnection() {
 
 
 
-
+//triiiiiiiiiiiimmmmmm
 std::string trim(const std::string& str) {
     // Find the first non-whitespace character
     size_t first = str.find_first_not_of(" \t\n\r");
@@ -135,6 +135,8 @@ std::string trim(const std::string& str) {
     return str.substr(first, last - first + 1);
 }
 
+
+// here i create the channel and add the nicks of the users with some checks
 void Server::createChannel(const std::string& channelName, const std::string& nickname) {
     // Check if the channel already exists
     if (channels.find(channelName) == channels.end()) {
@@ -165,6 +167,7 @@ bool startsWith(const std::string& str, const std::string& prefix) {
         usernamesregulars[fd] = username; // Associate the nickname with the client's socket descriptor
     }
 
+//it's a just a response for my client 
 void sendResponse(int fd, const std::string& message) {
         // Convert the message string to a C-style string
         const char* msg = message.c_str();
@@ -188,6 +191,7 @@ void sendResponse(int fd, const std::string& message) {
 
 
 
+//here finding the users for the handling the privet msg 
 int findUserFd(const std::string& nickname, const std::map<int, std::string>& usernames) {
     // Iterate over each entry in the usernames map
     for (std::map<int, std::string>::const_iterator it = usernames.begin(); it != usernames.end(); ++it) {
@@ -202,7 +206,7 @@ int findUserFd(const std::string& nickname, const std::map<int, std::string>& us
 }
 
 
-
+//handling privet msg between users only 
 void Server::handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message) {
     // Find the recipient's connection (socket file descriptor) for operators
     int recipientFd = findUserFd(recipient, usernamesoperators);
@@ -228,6 +232,7 @@ void Server::handlePrivateMessage(int senderFd, const std::string& recipient, co
     }
 }
 
+//this find is for finding nickname of the users i need to brodcasting to 
 int Server::findUserFd1(const std::string& nickname) {
     std::map<int, std::string>::iterator it;
     for (it = nicknames.begin(); it != nicknames.end(); ++it) {
@@ -238,6 +243,16 @@ int Server::findUserFd1(const std::string& nickname) {
     return -1; // Return -1 if the nickname is not found
 }
 
+int Server::findUserFdforkickregulars(const std::string& username) {
+    std::map<int, std::string>::iterator it;
+    for (it = usernamesregulars.begin(); it != usernamesregulars.end(); ++it) {
+        if (it->second == username) {
+            return it->first; // Return the file descriptor if the nickname matches
+        }
+    }
+    return -1; // Return -1 if the nickname is not found
+}
+//brodcasting msg to all nicks in the  channel 
 void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg) {
     // Check if the channel exists
     if (channels.find(channel) == channels.end()) {
@@ -269,13 +284,25 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
     }
 }
 
+//check if ope or not
 bool Server::isOperator(int fd) {
     // Check if the file descriptor exists in the map of operators
     return usernamesoperators.find(fd) != usernamesoperators.end();
 }
 
 
+void Server::kickUser(int fd) {
+    // Close the socket connection for the given file descriptor
+    close(fd);
 
+    // Remove the user from any data structures tracking active connections
+    // For example, if you have a map of file descriptors to usernames:
+    std::map<int, std::string>::iterator it = usernamesregulars.find(fd);
+    if (it != usernamesregulars.end()) {
+        // Remove the user from the map
+        usernamesregulars.erase(it);
+    }
+}
 
 
 
@@ -383,7 +410,17 @@ void Server::handleClientData(int fd) {
                     std::cout << "Message: " << message << std::endl;
             }
             else if(startsWith(command, "/kick ") && isOperator(fd)) {
-                
+                    std::string userkicked = command.substr(6);
+                    userkicked = trim(userkicked);
+
+                    int finduserfd = findUserFdforkickregulars(userkicked);
+                    if (finduserfd != -1)
+                    {
+                        kickUser(finduserfd);
+                        sendResponse(fd, "User '" + userkicked + "' has been kicked from the server." + '\n');
+                    }
+                    else
+                        sendResponse(fd, "Error: User '" + userkicked + "' not found or offline.\n");
 
             }
 //**************** STOOOOOOP HERE TOP G ... 

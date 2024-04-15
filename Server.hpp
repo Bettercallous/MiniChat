@@ -46,7 +46,9 @@ class Server {
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);
         void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg);
         int findUserFd1(const std::string& nickname);
-        bool Server::isOperator(int fd);
+        bool isOperator(int fd);
+        void kickUser(int fd);
+        int findUserFdforkickregulars(const std::string& username);
         // AND END HERE.
         void parseArgs(int ac, char **av);
         static void receiveSignal(int signum);
