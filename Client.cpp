@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client() {}
+Client::Client() : _isRegistered(false) {}
 
 Client::Client(int fd, std::string addr) : _fd(fd), _addr(addr) {}
 

@@ -332,16 +332,16 @@ void Server::handleClientData(int fd) {
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
 
 //******************* FROM THERE IM STARTING TOP GGG ************  .
-            if (startsWith(command, "/setnick ")) {
+            if (startsWith(command, "SETNICK ")) {
                 // Extract the nickname from the command
-                std::string nickname = command.substr(9); // Assuming "/setnick " is 9 characters long
+                std::string nickname = command.substr(8); // Assuming "/setnick " is 9 characters long
 
                 // Handle setting the nickname for the client's connection
                 setNickname(fd, nickname);
 
                 // Send a response back to the client confirming the action
                 sendResponse(fd, "Nickname set to: " + nickname + '\n');
-            } else if (startsWith(command, "/setuser ")) {
+            } else if (startsWith(command, "SETUSER ")) {
 
                 std::istringstream iss(command);
                 std::string cmd, username, privilege_level;
@@ -351,10 +351,10 @@ void Server::handleClientData(int fd) {
                 privilege_level = trim(privilege_level);
                 std::cout << "this is the privilege : " << privilege_level << std::endl;
 
-                if (privilege_level == "operators" )
+                if (privilege_level == "operator" )
                 {
                     //si moskir hna atbda lkhdma dyalk 
-                    std::cout << "we need to handle this " << std::endl;
+                    // std::cout << "we need to handle this " << std::endl;
                     setUsernameoperators(fd, username);
                     sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
                 }
@@ -367,7 +367,7 @@ void Server::handleClientData(int fd) {
 
                 // Process other commands or messages
                 // processCommand(fd, command);
-            } else if (startsWith(command, "/join ")) {
+            } else if (startsWith(command, "JOIN ")) {
                 std::string chanelname = command.substr(5);
                 chanelname = trim(chanelname);
                 createChannel(chanelname, nicknames[fd]);
@@ -409,8 +409,8 @@ void Server::handleClientData(int fd) {
                     std::cout << "Recipient: " << recipient << std::endl;
                     std::cout << "Message: " << message << std::endl;
             }
-            else if(startsWith(command, "/kick ") && isOperator(fd)) {
-                    std::string userkicked = command.substr(6);
+            else if(startsWith(command, "KICK ") && isOperator(fd)) {
+                    std::string userkicked = command.substr(5);
                     userkicked = trim(userkicked);
 
                     int finduserfd = findUserFdforkickregulars(userkicked);
@@ -423,6 +423,9 @@ void Server::handleClientData(int fd) {
                         sendResponse(fd, "Error: User '" + userkicked + "' not found or offline.\n");
 
             }
+            else if (startsWith(command, "KICK "))
+                sendResponse(fd, "Error: You don't have permission to use this command.\n");
+                
 //**************** STOOOOOOP HERE TOP G ... 
             break;
         }
