@@ -158,8 +158,11 @@ bool startsWith(const std::string& str, const std::string& prefix) {
         nicknames[fd] = nickname; // Associate the nickname with the client's socket descriptor
     }
 
- void Server::setUsername(int fd, const std::string& username) {
-        usernames[fd] = username; // Associate the nickname with the client's socket descriptor
+ void Server::setUsernameoperators(int fd, const std::string& username) {
+        usernamesoperators[fd] = username; // Associate the nickname with the client's socket descriptor
+    }
+ void Server::setUsernameregular(int fd, const std::string& username) {
+        usernamesregulars[fd] = username; // Associate the nickname with the client's socket descriptor
     }
 
 void sendResponse(int fd, const std::string& message) {
@@ -201,13 +204,23 @@ int findUserFd(const std::string& nickname, const std::map<int, std::string>& us
 
 
 void Server::handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message) {
-    // Find the recipient's connection (socket file descriptor)
-    int recipientFd = findUserFd(recipient, usernames);
+    // Find the recipient's connection (socket file descriptor) for operators
+    int recipientFd = findUserFd(recipient, usernamesoperators);
 
     if (recipientFd != -1) {
         // Forward the private message to the recipient's client
-        std::string privateMessage = "PRIVATE " + usernames[senderFd] + ": " + message + "\n";
+        std::string privateMessage = "PRIVATE " + usernamesoperators[senderFd] + ": " + message + "\n";
         send(recipientFd, privateMessage.c_str(), privateMessage.length(), 0);
+        return; // Exit the function to avoid executing the second block
+    }
+
+    // Find the recipient's connection (socket file descriptor) for regular users
+    int recipientFd1 = findUserFd(recipient, usernamesregulars);
+
+    if (recipientFd1 != -1) {
+        // Forward the private message to the recipient's client
+        std::string privateMessage = "PRIVATE " + usernamesregulars[senderFd] + ": " + message + "\n";
+        send(recipientFd1, privateMessage.c_str(), privateMessage.length(), 0);
     } else {
         // Handle case where recipient is not found (e.g., user not online)
         std::string errorMessage = "Error: User '" + recipient + "' not found or offline\n";
@@ -247,13 +260,18 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
 
         // If the file descriptor is found, send the message to the client
         if (recipientFd != -1) {
-            std::string message = "PRIVMSG " + channel + " :" + senderNickname + ": " + msg + "\r\n";
+            std::string message = "[" + channel + " channel" + "] " + senderNickname + " : " + msg + "\r\n";
             send(recipientFd, message.c_str(), message.size(), 0);
         } else {
             // If the file descriptor is not found, print an error message
             std::cerr << "Client " << client << " not found" << std::endl;
         }
     }
+}
+
+bool Server::isOperator(int fd) {
+    // Check if the file descriptor exists in the map of operators
+    return usernamesoperators.find(fd) != usernamesoperators.end();
 }
 
 
@@ -295,13 +313,30 @@ void Server::handleClientData(int fd) {
                 setNickname(fd, nickname);
 
                 // Send a response back to the client confirming the action
-                sendResponse(fd, "Nickname set to: " + nickname);
+                sendResponse(fd, "Nickname set to: " + nickname + '\n');
             } else if (startsWith(command, "/setuser ")) {
-                std::string username = command.substr(9);
 
-                setUsername(fd, username);
+                std::istringstream iss(command);
+                std::string cmd, username, privilege_level;
+                iss >> cmd >> username;
+                username = trim(username);
+                std::getline(iss, privilege_level);
+                privilege_level = trim(privilege_level);
+                std::cout << "this is the privilege : " << privilege_level << std::endl;
 
-                sendResponse(fd, "Username set to: " + username);
+                if (privilege_level == "operators" )
+                {
+                    //si moskir hna atbda lkhdma dyalk 
+                    std::cout << "we need to handle this " << std::endl;
+                    setUsernameoperators(fd, username);
+                    sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
+                }
+                else if (privilege_level == "regular") {
+                    setUsernameregular(fd, username);
+                    sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
+
+                }
+                
 
                 // Process other commands or messages
                 // processCommand(fd, command);
@@ -346,7 +381,11 @@ void Server::handleClientData(int fd) {
                     // Print the extracted recipient and message for debugging
                     std::cout << "Recipient: " << recipient << std::endl;
                     std::cout << "Message: " << message << std::endl;
-            } 
+            }
+            else if(startsWith(command, "/kick ") && isOperator(fd)) {
+                
+
+            }
 //**************** STOOOOOOP HERE TOP G ... 
             break;
         }

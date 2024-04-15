@@ -29,7 +29,8 @@ class Server {
         std::vector<Client> _clients;
         // THAT'S THA DATA OF TOOOP GGG START FROM THERE .
         std::map<int, std::string> nicknames; // Replace unordered_map with map
-        std::map<int, std::string> usernames; // Replace unordered_map with map
+        std::map<int, std::string> usernamesoperators; // Replace unordered_map with map
+        std::map<int, std::string> usernamesregulars;
         std::map<std::string, std::vector<std::string> > channels; //here a chanel name and list of client in every chanel 
 
         
@@ -39,11 +40,13 @@ class Server {
         ~Server();
         // THAT'S MY FUNCTIONS START FROM THERE
         void setNickname(int fd, const std::string& nickname);
-        void setUsername(int fd, const std::string& username);
+        void setUsernameoperators(int fd, const std::string& username);
+        void setUsernameregular(int fd, const std::string& username);
         void createChannel(const std::string& channel, const std::string& nickname);
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);
         void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg);
         int findUserFd1(const std::string& nickname);
+        bool Server::isOperator(int fd);
         // AND END HERE.
         void parseArgs(int ac, char **av);
         static void receiveSignal(int signum);
