@@ -1,6 +1,6 @@
 NAME = ircserv
 
-SRC = main.cpp Server.cpp Client.cpp
+SRC = main.cpp Server.cpp Client.cpp channel.cpp
 
 OBJ = ${SRC:.cpp=.o}
 

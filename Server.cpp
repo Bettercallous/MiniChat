@@ -1,10 +1,19 @@
 #include "Server.hpp"
+int a = 0;
 
 bool Server::_signal = false;
 
 Server::Server() {}
 
 Server::~Server() {}
+
+// void Server::setPassword(const std::string& password) {
+//     _password = password;
+// }
+
+std::string Server::getPassowrd() const {
+    return _password;
+}
 
 void Server::parseArgs(int ac, char **av) {
     if (ac != 3)
@@ -104,9 +113,12 @@ void Server::handleClientConnection() {
             if (newFd == -1) {
                 throw std::runtime_error("Error: accept() failed");
             }
+            std::string passwordRequest = "Please enter the password:\n";
+            send(newFd, passwordRequest.c_str(), passwordRequest.length(), 0);
 
             addPollfd(newFd, POLLIN, 0);
             _clients.push_back(Client(newFd, inet_ntoa((client_addr.sin_addr))));
+            
 
             std::cout << "Client <" << newFd << "> Connected" << std::endl;
         }
@@ -137,17 +149,18 @@ std::string trim(const std::string& str) {
 
 
 // here i create the channel and add the nicks of the users with some checks
-void Server::createChannel(const std::string& channelName, const std::string& nickname) {
+void Server::createChannel(const std::string& channelName, const std::string& nickname, int fd) {
     // Check if the channel already exists
-    if (channels.find(channelName) == channels.end()) {
-        // Channel doesn't exist, so create it
-        std::vector<std::string> users;
-        users.push_back(nickname);  // Add the user to the channel
-        channels[channelName] = users;
+    std::map<std::string, Channel>::iterator it = channels.find(channelName);
+    if (it == channels.end()) {
+        // Channel doesn't exist, so create it and add the user
+        Channel newChannel(channelName);
+        newChannel.addClient(nickname, fd);
+        channels.insert(std::make_pair(channelName, newChannel)); // Insert the new channel into the map
         std::cout << "Channel '" << channelName << "' created by '" << nickname << "'" << std::endl;
     } else {
         // Channel already exists, just add the user to it
-        channels[channelName].push_back(nickname);
+        it->second.addClient(nickname, fd);
         std::cout << "User '" << nickname << "' joined channel '" << channelName << "'" << std::endl;
     }
 }
@@ -173,7 +186,7 @@ void sendResponse(int fd, const std::string& message) {
         const char* msg = message.c_str();
         
         // Get the length of the message
-        size_t len = strlen(msg);
+        size_t len = strlen(msg);                 
         
         // Send the message to the client
         ssize_t bytesSent = send(fd, msg, len, 0);
@@ -252,26 +265,26 @@ int Server::findUserFdforkickregulars(const std::string& username) {
     }
     return -1; // Return -1 if the nickname is not found
 }
-//brodcasting msg to all nicks in the  channel 
+// brodcasting msg to all nicks in the  channel 
 void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg) {
     // Check if the channel exists
-    if (channels.find(channel) == channels.end()) {
+    debugPrintChannels();
+    std::map<std::string, Channel>::iterator it = channels.find(channel);
+    if (it == channels.end()) {
         std::cerr << "Channel " << channel << " does not exist" << std::endl;
         return;
     }
 
-    // Iterate through all clients in the channel and send the message
-// Get a reference to the vector of clients in the channel
-    const std::vector<std::string>& clients = channels[channel];
+    // Get a reference to the vector of clients in the channel
+    const std::vector<std::string>& clients = it->second.getClients();
 
-    // Iterate over the vector using iterators
-    std::vector<std::string>::const_iterator it;
-    for (it = clients.begin(); it != clients.end(); ++it) {
+    // Iterate over the vector of clients and send the message to each one
+    for (size_t i = 0; i < clients.size(); ++i) {
         // Get the current client nickname
-        const std::string& client = *it;
+        const std::string& client = clients[i];
 
         // Find the file descriptor associated with the client nickname
-        int recipientFd = findUserFd1(client);
+        int recipientFd = it->second.getUserFd(client);
 
         // If the file descriptor is found, send the message to the client
         if (recipientFd != -1) {
@@ -332,45 +345,119 @@ void Server::handleClientData(int fd) {
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
 
 //******************* FROM THERE IM STARTING TOP GGG ************  .
-            if (startsWith(command, "SETNICK ")) {
+            if (startsWith(command, "pass"))
+            {
+                std::string cmd, password;
+                std::istringstream iss(command);
+                iss >> cmd >> password;
+                password = trim(password); // Remove leading/trailing whitespace
+                std::string  passwordoftheserver = getPassowrd();
+                if (passwordoftheserver != password)
+                {
+                    std::string errorMessage = "Error: Incorrect password\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                }
+                else {
+                    std::string confirmation = "Welcome sir\n";
+                    send(fd, confirmation.c_str(), confirmation.length(), 0);
+                    a = 1;
+                }
+
+                // for (size_t i = 0; i < _clients.size(); ++i) {
+                //     if (_clients[i].getFd() == fd) {
+                //         _clients[i].setPassword(password);
+                //         std::cout << "Password set for client " << fd << ": " << password << std::endl;
+                //         break;
+                //     }
+                // }
+            }
+            if (startsWith(command, "nick")) {
+                std::string cmd, nick;
+                std::istringstream iss(command);
+                iss >> cmd >> nick;
+                nick = trim(nick);
+                for (size_t i = 0; i < _clients.size(); ++i) {
+                    if (_clients[i].getFd() == fd) {
+                        _clients[i].setNick(nick);
+                        std::cout << "Password set for client " << fd << ": " << nick << std::endl;
+                        break;
+                    }
+                }
                 // Extract the nickname from the command
-                std::string nickname = command.substr(8); // Assuming "/setnick " is 9 characters long
+                // std::string nickname = command.substr(8); // Assuming "/setnick " is 9 characters long
 
                 // Handle setting the nickname for the client's connection
-                setNickname(fd, nickname);
+
 
                 // Send a response back to the client confirming the action
-                sendResponse(fd, "Nickname set to: " + nickname + '\n');
-            } else if (startsWith(command, "SETUSER ")) {
+                sendResponse(fd, "Nickname set to: " + nick + '\n');
+                a = 2;
+            } else if (startsWith(command, "user")) {
 
                 std::istringstream iss(command);
-                std::string cmd, username, privilege_level;
-                iss >> cmd >> username;
+                std::string cmd, username, dontworry, dontworry1, realname, nickname;
+                iss >> cmd >> username >> dontworry >> dontworry1 >> realname;
+                // Remove leading and trailing whitespace from parameters
                 username = trim(username);
-                std::getline(iss, privilege_level);
-                privilege_level = trim(privilege_level);
-                std::cout << "this is the privilege : " << privilege_level << std::endl;
+                dontworry = trim(dontworry);
+                dontworry1 = trim(dontworry1);
+                realname = trim(realname);
 
-                if (privilege_level == "operator" )
-                {
-                    //si moskir hna atbda lkhdma dyalk 
-                    // std::cout << "we need to handle this " << std::endl;
-                    setUsernameoperators(fd, username);
-                    sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
+                for (size_t i = 0; i < _clients.size(); ++i) {
+                    if (_clients[i].getFd() == fd) {
+                        _clients[i].setUser(username);
+                        _clients[i].setName(realname);
+                        nickname = _clients[i].getNick();
+                        break;
+                    }
                 }
-                else if (privilege_level == "regular") {
-                    setUsernameregular(fd, username);
-                    sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
 
-                }
+                sendResponse(fd, "username set to: " + username + '\n');
+                sendResponse(fd, "realname set to: " + realname + '\n');
+
+                std::string one = ":irc.topg 001 " + nickname + " :Welcome to the topg Network, " + nickname + '\n';
+                std::string two = ":irc.topg 002 " + nickname + " :Your host is topg, running version 3030" + '\n';
+                std::string tre = ":irc.topg 003 " + nickname + " :This server was created Tue Nov 30 2011 at 11:11:25 EET" + '\n';
+                std::string foor = ":irc.topg 004 " + nickname + " topg tella(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) oOiwscrknfbghexzSjFI bhijklmMnoOstvcdSuU bkohv" + '\n';
+                send(fd, one.c_str(), one.length(), 0);
+                send(fd, two.c_str(), two.length(), 0);
+                send(fd, tre.c_str(), tre.length(), 0);
+                send(fd, foor.c_str(), foor.length(), 0);
+
+
+
+                
+
+
+
+
+                // if (privilege_level == "operator" )
+                // {
+                //     //si moskir hna atbda lkhdma dyalk 
+                //     // std::cout << "we need to handle this " << std::endl;
+                //     setUsernameoperators(fd, username);
+                //     sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
+                // }
+                // else if (privilege_level == "regular") {
+                //     setUsernameregular(fd, username);
+                //     sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
+
+                // }
                 
 
                 // Process other commands or messages
                 // processCommand(fd, command);
             } else if (startsWith(command, "JOIN ")) {
-                std::string chanelname = command.substr(5);
+                std::string user;
+                for (size_t i = 0; i < _clients.size(); ++i) {
+                    if (_clients[i].getFd() == fd) {
+                        user = _clients[i].getUser();
+                        break;
+                    }
+                }
+                std::string chanelname = command.substr(6);
                 chanelname = trim(chanelname);
-                createChannel(chanelname, nicknames[fd]);
+                createChannel(chanelname, user, fd);
 
             } else if (startsWith(command, "PRIVMSG ")) {
                     // Extract the recipient and the message from the command
@@ -425,7 +512,7 @@ void Server::handleClientData(int fd) {
             }
             else if (startsWith(command, "KICK "))
                 sendResponse(fd, "Error: You don't have permission to use this command.\n");
-                
+
 //**************** STOOOOOOP HERE TOP G ... 
             break;
         }

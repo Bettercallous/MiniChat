@@ -1,0 +1,44 @@
+remember the quote commande 
+
+create object for each instence : channel and client and server 
+
+
+client : fd , pass ,name , nick , user , and remember the lastchannel *
+
+
+channel : _limite : it's limite of the users joined the channel 
+-> nameofchannel 
+->topic 
+->key 
+->hastopic haskey and creationtime : if created .
+
+->victor of clients
+->vicotr of invited users 
+->victor of operators
+//tpic seter .
+//tpic time .
+
+
+
+
+this if for testing this how the commande behav : /connect liberachat
+
+
+
+
+////remember this when you connect to irssi you need to prompte the client to put a password 
+
+
+//remmember the username have 4 parameter check rfc 
+
+
+after seting the data ,  password user , nick ---> responce 001, 002, 003, 004
+
+
+and make sure the irssi client need all the responce to recognized you as a server be awake 
+
+
+
+rmreconns
+
+window close
