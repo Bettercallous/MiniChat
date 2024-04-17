@@ -40,6 +40,9 @@ public:
 
     // Add a client to the channel
 
+
+    
+
     void addClient(const std::string& client, int fd) {
         userFdMap[client] = fd;
     }
@@ -69,7 +72,7 @@ public:
     void addOperator(const std::string& operatorName) {
         operators.push_back(operatorName);
     }
-    
+
     int getUserFd(const std::string& username) const {
         std::map<std::string, int>::const_iterator it = userFdMap.find(username);
         if (it != userFdMap.end()) {
@@ -87,6 +90,16 @@ public:
         }
         return clients;
     }
+
+std::string getNickname(int fd) const {
+    std::map<std::string, int>::const_iterator it;
+    for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
+        if (it->second == fd) {
+            return it->first; // Return the nickname if the file descriptor matches
+        }
+    }
+    return ""; // Return an empty string if the file descriptor is not found
+}
 
     // Remove an operator from the channel
 };

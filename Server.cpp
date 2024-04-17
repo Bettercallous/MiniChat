@@ -275,6 +275,9 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
         return;
     }
 
+    // Construct the IRC message with the correct format for broadcasting
+    std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
+
     // Get a reference to the vector of clients in the channel
     const std::vector<std::string>& clients = it->second.getClients();
 
@@ -283,12 +286,20 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
         // Get the current client nickname
         const std::string& client = clients[i];
 
+        // Skip sending the message to the sender
+        std::cout << "this is the client name : "<< client <<  std::endl;
+        std::cout << "this is the nickname name : " << senderNickname << std::endl;
+
+        if (client == senderNickname) {
+            continue;
+        }
+
         // Find the file descriptor associated with the client nickname
         int recipientFd = it->second.getUserFd(client);
 
         // If the file descriptor is found, send the message to the client
         if (recipientFd != -1) {
-            std::string message = "[" + channel + " channel" + "] " + senderNickname + " : " + msg + "\r\n";
+            std::cout << message << std::endl;
             send(recipientFd, message.c_str(), message.size(), 0);
         } else {
             // If the file descriptor is not found, print an error message
@@ -448,39 +459,56 @@ void Server::handleClientData(int fd) {
                 // Process other commands or messages
                 // processCommand(fd, command);
             } else if (startsWith(command, "JOIN ")) {
-                std::string user;
+                std::string nick;
                 for (size_t i = 0; i < _clients.size(); ++i) {
                     if (_clients[i].getFd() == fd) {
-                        user = _clients[i].getUser();
+                        nick = _clients[i].getNick();
+                        std::cout << "this is the nick for checkig : " << nick << std::endl;
                         break;
                     }
                 }
                 std::string chanelname = command.substr(6);
+                std::cout << chanelname << std::endl;
                 chanelname = trim(chanelname);
-                createChannel(chanelname, user, fd);
+                std::cout << chanelname << std::endl;
+                createChannel(chanelname, nick, fd);
+
+
 
             } else if (startsWith(command, "PRIVMSG ")) {
                     // Extract the recipient and the message from the command
                     std::istringstream iss(command);
                     std::string cmd, recipient, message;
+                    std::string niiick;
                     iss >> cmd >> recipient;
                     recipient = trim(recipient);
                     std::getline(iss, message);
                     message = trim(message);
+                    message = message.substr(1);
                     if (recipient[0] == '#')
                     {
+
                         recipient = recipient.substr(1);
                         std::cout << "this the chanel name and was good : " << recipient << std::endl;
-                        broadcastMessage(recipient, nicknames[fd], message);
+                        for (size_t i = 0; i < _clients.size(); ++i) {
+                            if (_clients[i].getFd() == fd) {
+                                niiick =  _clients[i].getNick();
+                        // std::cout << "Password set for client " << fd << ": " << nick << std::endl;
+                                break;
+                        }
                     }
-                    else
-                    {
-                     if (message[0] == ':') {
-                            message = message.substr(1);
-                            handlePrivateMessage(fd, recipient, message);
+
+                        // std::string senderNickname = it->second.getNickname(fd);
+                        broadcastMessage(recipient, niiick, message);
                     }
+                    // else
+                    // {
+                    //     if (message[0] == ':') {
+                    //         message = message.substr(1);
+                    //         handlePrivateMessage(fd, recipient, message);
+                    //     }
                         
-                    }
+                    // }
                     // Remove the colon from the recipient if present
                     // if (!recipient.empty() && recipient[1] == ':') {
                     //     recipient = recipient.substr(1);
