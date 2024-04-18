@@ -156,6 +156,8 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         // Channel doesn't exist, so create it and add the user
         Channel newChannel(channelName);
         newChannel.addClient(nickname, fd);
+        newChannel.addOperator(nickname);
+        std::cout << nickname << " : im the operator of the channel guys. " << std::endl;
         channels.insert(std::make_pair(channelName, newChannel)); // Insert the new channel into the map
         std::cout << "Channel '" << channelName << "' created by '" << nickname << "'" << std::endl;
     } else {
@@ -501,34 +503,15 @@ void Server::handleClientData(int fd) {
                         for (size_t i = 0; i < _clients.size(); ++i) {
                             if (_clients[i].getFd() == fd) {
                                 niiick =  _clients[i].getNick();
-                        // std::cout << "Password set for client " << fd << ": " << nick << std::endl;
                                 break;
                         }
                     }
-
-                        // std::string senderNickname = it->second.getNickname(fd);
                         broadcastMessage(recipient, niiick, message);
                     }
                     else
                     {
                         handlePrivateMessage(fd, recipient, message);
-                        // if (message[0] == ':') {
-                        //     message = message.substr(1);
-                        // }
-                        
                     }
-                    // Remove the colon from the recipient if present
-                    // if (!recipient.empty() && recipient[1] == ':') {
-                    //     recipient = recipient.substr(1);
-                    // }
-                    
-
-                    // Read the rest of the line as the message
-
-                    // if (message[0] == ':')
-                    //     message = message.substr(1);
-
-                    // Print the extracted recipient and message for debugging
                     std::cout << "Recipient: " << recipient << std::endl;
                     std::cout << "Message: " << message << std::endl;
             }
