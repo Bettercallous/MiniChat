@@ -25,9 +25,8 @@ private:
     std::string topic;
     std::string key;
     std::vector<std::string> users;
-    std::map<int, std::string> nicknames; // Replace unordered_map with map
+    // std::map<int, std::string> nicknames; // Replace unordered_map with map
     std::map<std::string, int> userFdMap; // Mapping of usernames to file descriptors
-
     std::vector<std::string> invitedUsers;
     std::vector<std::string> operators;
 

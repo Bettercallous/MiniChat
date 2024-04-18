@@ -176,6 +176,9 @@ bool startsWith(const std::string& str, const std::string& prefix) {
  void Server::setUsernameoperators(int fd, const std::string& username) {
         usernamesoperators[fd] = username; // Associate the nickname with the client's socket descriptor
     }
+ void Server::setUsernames(int fd, const std::string& username) {
+        usernames[fd] = username; // Associate the nickname with the client's socket descriptor
+    }
  void Server::setUsernameregular(int fd, const std::string& username) {
         usernamesregulars[fd] = username; // Associate the nickname with the client's socket descriptor
     }
@@ -219,37 +222,40 @@ int findUserFd(const std::string& nickname, const std::map<int, std::string>& us
 }
 
 
+///iterate to find the username with the fd
+
+// std::string Server::findUsernameforsending(int fd) {
+//     std::map<int, std::string>::iterator it;
+//     for (it = usernames.begin(); it != usernames.end(); ++it) {
+//         if (it->first == fd) {
+//             return it->second; // Return the file descriptor if the nickname matches
+//         }
+//     }
+// }
+//forget it
+
 //handling privet msg between users only 
 void Server::handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message) {
-    // Find the recipient's connection (socket file descriptor) for operators
-    int recipientFd = findUserFd(recipient, usernamesoperators);
+    // Find the recipient's connection (socket file descriptor)
+    int recipientFd = findUserFd1(recipient);
+    // std::string  sendernameuser = findUsernameforsending(senderFd);
 
     if (recipientFd != -1) {
         // Forward the private message to the recipient's client
-        std::string privateMessage = "PRIVATE " + usernamesoperators[senderFd] + ": " + message + "\n";
+        std::string privateMessage = ":" + usernames[senderFd] + " PRIVMSG " + recipient + " :" + message + "\r\n";
         send(recipientFd, privateMessage.c_str(), privateMessage.length(), 0);
-        return; // Exit the function to avoid executing the second block
-    }
-
-    // Find the recipient's connection (socket file descriptor) for regular users
-    int recipientFd1 = findUserFd(recipient, usernamesregulars);
-
-    if (recipientFd1 != -1) {
-        // Forward the private message to the recipient's client
-        std::string privateMessage = "PRIVATE " + usernamesregulars[senderFd] + ": " + message + "\n";
-        send(recipientFd1, privateMessage.c_str(), privateMessage.length(), 0);
     } else {
         // Handle case where recipient is not found (e.g., user not online)
-        std::string errorMessage = "Error: User '" + recipient + "' not found or offline\n";
+        std::string errorMessage = ":server.host NOTICE " + usernames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
         send(senderFd, errorMessage.c_str(), errorMessage.length(), 0);
     }
 }
 
 //this find is for finding nickname of the users i need to brodcasting to 
-int Server::findUserFd1(const std::string& nickname) {
+int Server::findUserFd1(const std::string& username) {
     std::map<int, std::string>::iterator it;
-    for (it = nicknames.begin(); it != nicknames.end(); ++it) {
-        if (it->second == nickname) {
+    for (it = usernames.begin(); it != usernames.end(); ++it) {
+        if (it->second == username) {
             return it->first; // Return the file descriptor if the nickname matches
         }
     }
@@ -414,6 +420,8 @@ void Server::handleClientData(int fd) {
                 dontworry1 = trim(dontworry1);
                 realname = trim(realname);
 
+                setUsernames(fd, username);
+
                 for (size_t i = 0; i < _clients.size(); ++i) {
                     if (_clients[i].getFd() == fd) {
                         _clients[i].setUser(username);
@@ -501,14 +509,14 @@ void Server::handleClientData(int fd) {
                         // std::string senderNickname = it->second.getNickname(fd);
                         broadcastMessage(recipient, niiick, message);
                     }
-                    // else
-                    // {
-                    //     if (message[0] == ':') {
-                    //         message = message.substr(1);
-                    //         handlePrivateMessage(fd, recipient, message);
-                    //     }
+                    else
+                    {
+                        handlePrivateMessage(fd, recipient, message);
+                        // if (message[0] == ':') {
+                        //     message = message.substr(1);
+                        // }
                         
-                    // }
+                    }
                     // Remove the colon from the recipient if present
                     // if (!recipient.empty() && recipient[1] == ':') {
                     //     recipient = recipient.substr(1);

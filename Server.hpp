@@ -31,6 +31,8 @@ class Server {
         // THAT'S THA DATA OF TOOOP GGG START FROM THERE .
         std::map<int, std::string> nicknames; // Replace unordered_map with map
         std::map<int, std::string> usernamesoperators; // Replace unordered_map with map
+
+        std::map<int, std::string> usernames; // Replace unordered_map with map
         std::map<int, std::string> usernamesregulars;
         // std::map<std::string, std::vector<std::string> > channels; //here a chanel name and list of client in every chanel 
         std::map<std::string, Channel> channels;
@@ -45,11 +47,14 @@ class Server {
         std::string getPassowrd() const;
         void setPassword(const std::string& password); 
         void setUsernameoperators(int fd, const std::string& username);
+        void setUsernames(int fd, const std::string& username);
+
         void setUsernameregular(int fd, const std::string& username);
         void createChannel(const std::string& channel, const std::string& nickname, int fd);
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);
         void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg);
-        int findUserFd1(const std::string& nickname);
+        int findUserFd1(const std::string& username);
+        std::string findUsernameforsending(int fd);
         bool isOperator(int fd);
         void kickUser(int fd);
         int findUserFdforkickregulars(const std::string& username);
