@@ -156,7 +156,7 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         // Channel doesn't exist, so create it and add the user
         Channel newChannel(channelName);
         newChannel.addClient(nickname, fd);
-        newChannel.addOperator(nickname);
+        newChannel.addOperator(nickname, fd);
         std::cout << nickname << " : im the operator of the channel guys. " << std::endl;
         channels.insert(std::make_pair(channelName, newChannel)); // Insert the new channel into the map
         std::cout << "Channel '" << channelName << "' created by '" << nickname << "'" << std::endl;
@@ -274,7 +274,7 @@ int Server::findUserFdforkickregulars(const std::string& username) {
     return -1; // Return -1 if the nickname is not found
 }
 // brodcasting msg to all nicks in the  channel 
-void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg) {
+void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg, int fd) {
     // Check if the channel exists
     debugPrintChannels();
     std::map<std::string, Channel>::iterator it = channels.find(channel);
@@ -283,6 +283,11 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
         return;
     }
 
+    if (channels[channel].findUserFdForKickRegulars(senderNickname) == -1)
+    {
+        std::cout << "this user kicked from the channel" << std::endl;
+        return;
+    }
     // Construct the IRC message with the correct format for broadcasting
     std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
 
@@ -317,10 +322,10 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
 }
 
 //check if ope or not
-bool Server::isOperator(int fd) {
-    // Check if the file descriptor exists in the map of operators
-    return usernamesoperators.find(fd) != usernamesoperators.end();
-}
+// bool Server::isOperator(int fd) {
+//     // Check if the file descriptor exists in the map of operators
+//     int fd = 
+// }
 
 
 void Server::kickUser(int fd) {
@@ -403,7 +408,7 @@ void Server::handleClientData(int fd) {
                 send(fd, pongMessage.c_str(), pongMessage.length(), 0);
                 std::cout << "ping was sent" << std::endl;
             }
-            else if (startsWith(command, "nick")) {
+            else if (startsWith(command, "nick") && a == 1) {
                 std::string cmd, nick;
                 std::istringstream iss(command);
                 iss >> cmd >> nick;
@@ -424,7 +429,7 @@ void Server::handleClientData(int fd) {
                 // Send a response back to the client confirming the action
                 sendResponse(fd, "Nickname set to: " + nick + '\n');
                 a = 2;
-            } else if (startsWith(command, "user")) {
+            } else if (startsWith(command, "user") && a == 2) {
 
                 std::istringstream iss(command);
                 std::string cmd, username, dontworry, dontworry1, realname, nickname;
@@ -445,14 +450,15 @@ void Server::handleClientData(int fd) {
                         break;
                     }
                 }
+                a = 0;
 
                 sendResponse(fd, "username set to: " + username + '\n');
                 sendResponse(fd, "realname set to: " + realname + '\n');
 
-                std::string one = ":irc.topg 001 " + nickname + " :Welcome to the topg Network, " + nickname + '\n';
-                std::string two = ":irc.topg 002 " + nickname + " :Your host is topg, running version 3030" + '\n';
-                std::string tre = ":irc.topg 003 " + nickname + " :This server was created Tue Nov 30 2011 at 11:11:25 EET" + '\n';
-                std::string foor = ":irc.topg 004 " + nickname + " topg tella(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) oOiwscrknfbghexzSjFI bhijklmMnoOstvcdSuU bkohv" + '\n';
+                std::string one = ":irc.l9oroch 001 " + nickname + " :Welcome to the l9oroch Network, " + nickname + '\n';
+                std::string two = ":irc.l9oroch 002 " + nickname + " :Your host is l9oroch, running version 3030" + '\n';
+                std::string tre = ":irc.l9oroch 003 " + nickname + " :This server was created Tue Nov 30 2011 at 11:11:25 EET" + '\n';
+                std::string foor = ":irc.l9oroch 004 " + nickname + " l9oroch tella(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) oOiwscrknfbghexzSjFI bhijklmMnoOstvcdSuU bkohv" + '\n';
                 send(fd, one.c_str(), one.length(), 0);
                 send(fd, two.c_str(), two.length(), 0);
                 send(fd, tre.c_str(), tre.length(), 0);
@@ -519,7 +525,7 @@ void Server::handleClientData(int fd) {
                                 break;
                         }
                     }
-                        broadcastMessage(recipient, niiick, message);
+                        broadcastMessage(recipient, niiick, message, fd);
                     }
                     else
                     {
@@ -528,22 +534,30 @@ void Server::handleClientData(int fd) {
                     std::cout << "Recipient: " << recipient << std::endl;
                     std::cout << "Message: " << message << std::endl;
             }
-            else if(startsWith(command, "KICK ") && isOperator(fd)) {
-                    std::string userkicked = command.substr(5);
-                    userkicked = trim(userkicked);
+            else if (startsWith(command, "KICK ")) {
+    // Extract the channel name and user to be kicked
+                std::string channelName, userToKick;
+                std::istringstream iss(command.substr(6));
+                iss >> channelName >> userToKick;
+                channelName = trim(channelName);
+                userToKick = trim(userToKick);
 
-                    int finduserfd = findUserFdforkickregulars(userkicked);
-                    if (finduserfd != -1)
-                    {
-                        kickUser(finduserfd);
-                        sendResponse(fd, "User '" + userkicked + "' has been kicked from the server." + '\n');
+    // Check if the sender is an operator in the specified channel
+                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+        // Check if the user to be kicked is online
+                    int userFd = channels[channelName].findUserFdForKickRegulars(userToKick);
+                    if (userFd != -1) {
+            // Kick the user
+                        // kickUser(userFd);
+                        channels[channelName].ejectUser(userFd);
+                        sendResponse(fd, "User '" + userToKick + "' has been kicked from the server.\n");
+                    } else {
+                        sendResponse(fd, "Error: User '" + userToKick + "' not found or offline.\n");
                     }
-                    else
-                        sendResponse(fd, "Error: User '" + userkicked + "' not found or offline.\n");
-
+             } else {
+                sendResponse(fd, "Error: You are not authorized to execute this command.\n");
+                }
             }
-            else if (startsWith(command, "KICK "))
-                sendResponse(fd, "Error: You don't have permission to use this command.\n");
 
 //**************** STOOOOOOP HERE TOP G ... 
             break;

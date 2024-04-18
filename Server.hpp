@@ -52,7 +52,7 @@ class Server {
         void setUsernameregular(int fd, const std::string& username);
         void createChannel(const std::string& channel, const std::string& nickname, int fd);
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);
-        void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg);
+        void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg, int fd);
         int findUserFd1(const std::string& username);
         std::string findUsernameforsending(int fd);
         bool isOperator(int fd);

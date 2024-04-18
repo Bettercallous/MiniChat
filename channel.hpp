@@ -17,7 +17,7 @@
 #include "Client.hpp"
 #include <cstring>
 #include <map>
-
+#include <string>
 
 class Channel {
 private:
@@ -28,10 +28,12 @@ private:
     // std::map<int, std::string> nicknames; // Replace unordered_map with map
     std::map<std::string, int> userFdMap; // Mapping of usernames to file descriptors
     std::vector<std::string> invitedUsers;
-    std::vector<std::string> operators;
+    std::map<std::string, int>  operators;
 
 public:
     // Constructors
+    Channel() {}
+
     Channel(const std::string& name) : Channelname(name) {}
 
     // Destructor
@@ -68,8 +70,9 @@ public:
     }
 
     // Add an operator to the channel
-    void addOperator(const std::string& operatorName) {
-        operators.push_back(operatorName);
+    void addOperator(const std::string& operatorName, int fd) {
+    // Store the operator name and file descriptor in the map
+    operators[operatorName] = fd;
     }
 
     int getUserFd(const std::string& username) const {
@@ -90,16 +93,54 @@ public:
         return clients;
     }
 
-std::string getNickname(int fd) const {
-    std::map<std::string, int>::const_iterator it;
-    for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
+    std::string getNickname(int fd) const {
+        std::map<std::string, int>::const_iterator it;
+        for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
         if (it->second == fd) {
             return it->first; // Return the nickname if the file descriptor matches
         }
+        }
+        return ""; // Return an empty string if the file descriptor is not found
     }
-    return ""; // Return an empty string if the file descriptor is not found
+
+
+    bool isOperator(int fd) {
+    // Iterate through the map of operators
+    for (std::map<std::string, int>::iterator it = operators.begin(); it != operators.end(); ++it) {
+        // Check if the file descriptor matches
+        if (it->second == fd) {
+            return true; // Found the file descriptor in the map
+        }
+    }
+    return false; // File descriptor not found in the map
+    }
+
+    
+
+    int findUserFdForKickRegulars(const std::string& username) {
+    // Iterate through the userFdMap to find the user
+    std::map<std::string, int>::iterator it;
+    for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
+        if (it->first == username) {
+            return it->second; // Return the file descriptor if the username matches
+        }
+    }
+    return -1; // Return -1 if the user is not found
 }
 
+
+ void ejectUser(int fd) {
+    // Iterate over the map to find the user with the given file descriptor
+    std::map<std::string, int>::iterator it;
+    for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
+        if (it->second == fd) {
+            // Erase the user from the map
+            userFdMap.erase(it);
+            std::cout << "the user earased " << std::endl;
+            return; // Exit the function after removing the user
+        }
+    }
+}
     // Remove an operator from the channel
 };
 
