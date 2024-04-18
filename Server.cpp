@@ -390,7 +390,20 @@ void Server::handleClientData(int fd) {
                 //     }
                 // }
             }
-            if (startsWith(command, "nick")) {
+            else if (startsWith(command, "PING"))
+            {
+                std::istringstream iss(command);
+
+                std::string serverHostname = command.substr(5); // Skip the "PING " prefix
+
+// Construct the PONG message with the server hostname
+                std::string pongMessage = "PONG " + serverHostname + "\r\n";
+
+// Send the PONG message back to the client
+                send(fd, pongMessage.c_str(), pongMessage.length(), 0);
+                std::cout << "ping was sent" << std::endl;
+            }
+            else if (startsWith(command, "nick")) {
                 std::string cmd, nick;
                 std::istringstream iss(command);
                 iss >> cmd >> nick;
