@@ -53,6 +53,7 @@ class Server {
         void createChannel(const std::string& channel, const std::string& nickname, int fd);
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);
         void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg, int fd);
+        void smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason);
         int findUserFd1(const std::string& username);
         std::string findUsernameforsending(int fd);
         bool isOperator(int fd);

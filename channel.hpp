@@ -141,6 +141,17 @@ public:
         }
     }
 }
+
+std::string getOperatorNickname(int fd) const {
+    std::map<std::string, int>::const_iterator it;
+    for (it = operators.begin(); it != operators.end(); ++it) {
+        if (it->second == fd) {
+            return it->first;
+        }
+    }
+    return ""; // Return empty string if operator not found
+}
+
     // Remove an operator from the channel
 };
 

@@ -1,5 +1,7 @@
 #include "Server.hpp"
 int a = 0;
+int opperatorfd;
+
 
 bool Server::_signal = false;
 
@@ -157,14 +159,67 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         Channel newChannel(channelName);
         newChannel.addClient(nickname, fd);
         newChannel.addOperator(nickname, fd);
-        std::cout << nickname << " : im the operator of the channel guys. " << std::endl;
-        channels.insert(std::make_pair(channelName, newChannel)); // Insert the new channel into the map
-        std::cout << "Channel '" << channelName << "' created by '" << nickname << "'" << std::endl;
+        opperatorfd = fd;
+
+        // Send JOIN message to the client
+        std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
+        send(fd, joinMessage.c_str(), joinMessage.length(), 0);
+        // Send MODE message to the client
+        std::string modeMessage = ":irc.example.com MODE #" + channelName + " +nt\n";
+        send(fd, modeMessage.c_str(), modeMessage.length(), 0);
+
+        // Send NAMES message to the client
+        std::string namesMessage = ":irc.example.com 353 " + nickname + " = #" + channelName + " :@" + nickname + "\n";
+        send(fd, namesMessage.c_str(), namesMessage.length(), 0);
+
+        // Send END OF NAMES message to the client
+        std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
+        send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+
+        // Insert the new channel into the map
+        channels.insert(std::make_pair(channelName, newChannel));
+
     } else {
-        // Channel already exists, just add the user to it
-        it->second.addClient(nickname, fd);
-        std::cout << "User '" << nickname << "' joined channel '" << channelName << "'" << std::endl;
+    // Channel already exists, just add the user to it
+    it->second.addClient(nickname, fd);
+
+    // Send JOIN message to the client
+    std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
+    send(fd, joinMessage.c_str(), joinMessage.length(), 0);
+
+    // Send CHANNEL TOPIC message to the client
+    std::string topicMessage = ":irc.example.com 332 " + nickname + " #" + channelName + " :This is my cool channel! https://irc.com\n";
+    send(fd, topicMessage.c_str(), topicMessage.length(), 0);
+
+    // Send CHANNEL CREATION TIME message to the client
+    std::string creationTimeMessage = ":irc.example.com 333 " + nickname + " #" + channelName + " dan!~d@localhost 1547691506\n";
+    send(fd, creationTimeMessage.c_str(), creationTimeMessage.length(), 0);
+
+    // Send NAMES message to the client
+    std::string namesMessage = ":irc.example.com 353 " + nickname + " @ #" + channelName + " :";
+
+    const std::vector<std::string>& clients = channels[channelName].getClients();
+    std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
+
+    for (size_t i = 0; i < clients.size(); ++i) {
+        const std::string& user = clients[i];
+        if (user == operators) {
+            namesMessage += "@" + user;
+        } else {
+            namesMessage += user;
+        }
+
+        if (i < clients.size() - 1) {
+            namesMessage += " ";
+        }
     }
+    namesMessage += "\n";
+    send(fd, namesMessage.c_str(), namesMessage.length(), 0);
+
+    // Send END OF NAMES message to the client
+    std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
+    send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+}
 }
 
 bool startsWith(const std::string& str, const std::string& prefix) {
@@ -244,11 +299,11 @@ void Server::handlePrivateMessage(int senderFd, const std::string& recipient, co
 
     if (recipientFd != -1) {
         // Forward the private message to the recipient's client
-        std::string privateMessage = ":" + usernames[senderFd] + " PRIVMSG " + recipient + " :" + message + "\r\n";
+        std::string privateMessage = ":" + nicknames[senderFd] + " PRIVMSG " + recipient + " :" + message + "\r\n";
         send(recipientFd, privateMessage.c_str(), privateMessage.length(), 0);
     } else {
         // Handle case where recipient is not found (e.g., user not online)
-        std::string errorMessage = ":server.host NOTICE " + usernames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
+        std::string errorMessage = ":server.host NOTICE " + nicknames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
         send(senderFd, errorMessage.c_str(), errorMessage.length(), 0);
     }
 }
@@ -256,7 +311,7 @@ void Server::handlePrivateMessage(int senderFd, const std::string& recipient, co
 //this find is for finding nickname of the users i need to brodcasting to 
 int Server::findUserFd1(const std::string& username) {
     std::map<int, std::string>::iterator it;
-    for (it = usernames.begin(); it != usernames.end(); ++it) {
+    for (it = nicknames.begin(); it != nicknames.end(); ++it) {
         if (it->second == username) {
             return it->first; // Return the file descriptor if the nickname matches
         }
@@ -291,6 +346,7 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
     // Construct the IRC message with the correct format for broadcasting
     std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
 
+
     // Get a reference to the vector of clients in the channel
     const std::vector<std::string>& clients = it->second.getClients();
 
@@ -320,6 +376,55 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
         }
     }
 }
+
+void Server::smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason) {
+    // Check if the channel exists
+    std::map<std::string, Channel>::iterator it = channels.find(channelname);
+    if (it == channels.end()) {
+        std::cerr << "Channel " << channelname << " does not exist" << std::endl;
+        return;
+    }
+
+    // if (channels[channelname].findUserFdForKickRegulars(nicknamesender) == -1)
+    // {
+    //     std::cout << "this user kicked from the channel" << std::endl;
+    //     return;
+    // }
+    // Construct the IRC message with the correct format for broadcasting
+    // std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
+    std::string kickMessage = ":" + nicknamesender + " KICK #" + channelname + " " + usertokick + " :" + reason + "\n";
+
+    // Get a reference to the vector of clients in the channel
+    const std::vector<std::string>& clients = it->second.getClients();
+
+    // Iterate over the vector of clients and send the message to each one
+    for (size_t i = 0; i < clients.size(); ++i) {
+        // Get the current client nickname
+        const std::string& client = clients[i];
+
+        // Skip sending the message to the sender
+        // std::cout << "this is the client name : "<< client <<  std::endl;
+        // std::cout << "this is the nickname name : " << senderNickname << std::endl;
+
+        if (client == nicknamesender) {
+            continue;
+        }
+
+        // Find the file descriptor associated with the client nickname
+        int recipientFd = it->second.getUserFd(client);
+
+        // If the file descriptor is found, send the message to the client
+        if (recipientFd != -1) {
+            // std::cout << message << std::endl;
+            send(recipientFd, kickMessage.c_str(), kickMessage.size(), 0);
+        } else {
+            // If the file descriptor is not found, print an error message
+            std::cerr << "Client " << client << " not found" << std::endl;
+        }
+    }
+}
+
+
 
 //check if ope or not
 // bool Server::isOperator(int fd) {
@@ -413,6 +518,7 @@ void Server::handleClientData(int fd) {
                 std::istringstream iss(command);
                 iss >> cmd >> nick;
                 nick = trim(nick);
+                setNickname(fd, nick);
                 for (size_t i = 0; i < _clients.size(); ++i) {
                     if (_clients[i].getFd() == fd) {
                         _clients[i].setNick(nick);
@@ -536,11 +642,13 @@ void Server::handleClientData(int fd) {
             }
             else if (startsWith(command, "KICK ")) {
     // Extract the channel name and user to be kicked
-                std::string channelName, userToKick;
+                std::string channelName, userToKick, reason;
                 std::istringstream iss(command.substr(6));
                 iss >> channelName >> userToKick;
+                std::getline(iss, reason);
                 channelName = trim(channelName);
                 userToKick = trim(userToKick);
+                reason = trim(reason);
 
     // Check if the sender is an operator in the specified channel
                 if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
@@ -550,13 +658,18 @@ void Server::handleClientData(int fd) {
             // Kick the user
                         // kickUser(userFd);
                         channels[channelName].ejectUser(userFd);
-                        sendResponse(fd, "User '" + userToKick + "' has been kicked from the server.\n");
+                        std::string kickMessage = ":" + channels[channelName].getNickname(fd) + " KICK #" + channelName + " " + userToKick + " :" + reason + "\n";
+                        smallbroadcastMessagefortheckick(channels[channelName].getNickname(fd), channelName, userToKick, reason);
+                        send(fd, kickMessage.c_str(), kickMessage.length(), 0);
+                        send(userFd , kickMessage.c_str(), kickMessage.length(), 0);
                     } else {
-                        sendResponse(fd, "Error: User '" + userToKick + "' not found or offline.\n");
+                             std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: the user : " + userToKick + " is not found or offline." + "\r\n";
+
+                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                     }
              } else {
-                sendResponse(fd, "Error: You are not authorized to execute this command.\n");
-                }
+                std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + userToKick + "\r\n";
+                send(fd, errorMessage.c_str(), errorMessage.size(), 0);             }
             }
 
 //**************** STOOOOOOP HERE TOP G ... 
