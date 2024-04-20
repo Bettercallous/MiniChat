@@ -820,6 +820,12 @@ void Server::handleClientData(int fd) {
                         std::string modeMessage = ":" + channels[channelName].getNickname(fd) + " MODE #" + channelName + " +o " + nick + "\n";
                         send(fd, modeMessage.c_str(), modeMessage.length(), 0);
                     }
+                    else
+                    {
+                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                    }
+
                 }
                 else if (mode == "-o")
                 {
@@ -828,10 +834,15 @@ void Server::handleClientData(int fd) {
                         std::string modeMessage = ":" + channels[channelName].getNickname(fd) + " MODE #" + channelName + " -o " + nick + "\n";
                         send(fd, modeMessage.c_str(), modeMessage.length(), 0);
                     }
+                    else
+                    {
+                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                    }
                 }
                 // else if (mode == "-i")
                 // {
-
+                    
                 // }
             }
 
