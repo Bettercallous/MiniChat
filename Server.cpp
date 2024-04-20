@@ -1,6 +1,7 @@
 #include "Server.hpp"
 int a = 0;
-int opperatorfd;
+int opperatorfd = 0;
+int issettop = 0;
 
 
 bool Server::_signal = false;
@@ -518,6 +519,42 @@ void Server::smallbroadcastMessageforTopic(std::string nicknamesender, const std
 }
 
 
+void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& channelname, std::string mode) {
+    std::map<std::string, Channel>::iterator it = channels.find(channelname);
+    if (it == channels.end()) {
+        std::cerr << "Channel " << channelname << " does not exist" << std::endl;
+        return;
+    }
+
+    // Construct the mode change message
+    std::string modeChangeMessage;
+    if (mode == "+t") {
+        modeChangeMessage = ":server.host MODE #" + channelname + " +t by " + nicknamesender + "\n";
+    } else if(mode == "-t") {
+        modeChangeMessage = ":server.host MODE #" + channelname + " -t by " + nicknamesender + "\n";
+    }
+
+    // Get the file descriptor of the sender
+    int senderFd = it->second.getUserFd(nicknamesender);
+
+    // Get a reference to the vector of clients in the channel
+    const std::vector<std::string>& clients = it->second.getClients();
+
+    // Iterate over the vector of clients and send the message to each one
+    for (size_t i = 0; i < clients.size(); ++i) {
+        // Get the current client nickname
+        const std::string& client = clients[i];
+
+        int recipientFd = it->second.getUserFd(client);
+        if (recipientFd != -1 && recipientFd != senderFd) {
+            send(recipientFd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+        } else {
+            std::cerr << "Client " << client << " not found or is the sender" << std::endl;
+        }
+    }
+}
+
+
 
 
 //check if ope or not
@@ -774,7 +811,7 @@ void Server::handleClientData(int fd) {
                 topic = trim(topic);
                 topic = topic.substr(1);
 
-                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                if ((channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) || issettop == 1)
                 {
                     channels[channelName].setTopic(topic);
                     smallbroadcastMessageforTopic(channels[channelName].getNickname(fd), channelName, topic );
@@ -840,12 +877,17 @@ void Server::handleClientData(int fd) {
                         send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                     }
                 }
-                // else if (mode == "-i")
-                // {
-                    
-                // }
+                else if (mode == "-t")
+                {
+                    smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode);
+                    issettop = 1;
+                }
+                else if (mode == "+t")
+                {
+                    smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode);
+                    issettop = 0;
+                }
             }
-
 //**************** STOOOOOOP HERE TOP G ... 
             break;
         }
