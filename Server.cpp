@@ -817,7 +817,7 @@ void Server::handleClientData(int fd) {
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
                         channels[channelName].addOperator(nick, channels[channelName].getUserFd(nick));
-                        std::string modeMessage = ":" + nick + " MODE #" + channelName + " +o " + nick + "\n";
+                        std::string modeMessage = ":" + channels[channelName].getNickname(fd) + " MODE #" + channelName + " +o " + nick + "\n";
                         send(fd, modeMessage.c_str(), modeMessage.length(), 0);
                     }
                 }
@@ -825,7 +825,7 @@ void Server::handleClientData(int fd) {
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
                         channels[channelName].removeOperator(nick);
-                        std::string modeMessage = ":" + nick + " MODE #" + channelName + " -o " + nick + "\n";
+                        std::string modeMessage = ":" + channels[channelName].getNickname(fd) + " MODE #" + channelName + " -o " + nick + "\n";
                         send(fd, modeMessage.c_str(), modeMessage.length(), 0);
                     }
                 }
