@@ -142,6 +142,19 @@ std::string getOperatorNickname(int fd) const {
     return ""; // Return empty string if operator not found
 }
 
+  void removeOperator(const std::string& operatorName )
+ {
+    // Iterate through the map to find the operator
+    std::map<std::string, int>::iterator it;
+    for (it = operators.begin(); it != operators.end(); ++it) {
+        if (it->first == operatorName) {
+            // Erase the operator from the map
+            operators.erase(it);
+            return; // Exit the function after removing the operator
+        }
+    }
+ }
+
     // Remove an operator from the channel
 };
 
