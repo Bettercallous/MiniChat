@@ -27,7 +27,7 @@ private:
     std::vector<std::string> users;
     // std::map<int, std::string> nicknames; // Replace unordered_map with map
     std::map<std::string, int> userFdMap; // Mapping of usernames to file descriptors
-    std::vector<std::string> invitedUsers;
+    std::map<std::string, int> invitedUsers;
     std::map<std::string, int>  operators;
 
 public:
@@ -39,34 +39,24 @@ public:
     // Destructor
     ~Channel() {}
 
-    // Add a client to the channel
 
 
+    void setTopic(const std::string& newTopic) {
+        topic = newTopic;
+    }
+
+    // Get topic function
+    std::string getTopic() const {
+        return topic;
     
+    }
 
     void addClient(const std::string& client, int fd) {
         userFdMap[client] = fd;
     }
 
-    void addClient(const std::string& client) {
-        users.push_back(client);
-    }
-
-    // Remove a client from the channel
-    void removeClient(const std::string& nickname) {
-        // Implement removal logic
-        // Iterate through clients vector, find the client by nickname, and remove it
-    }
-
-    // Add an invited user to the channel
-    void inviteUser(const std::string& user) {
-        invitedUsers.push_back(user);
-    }
-
-    // Remove an invited user from the channel
-    void uninviteUser(const std::string& user) {
-        // Implement removal logic
-        // Iterate through invitedUsers vector, find the user, and remove it
+    void addClientinveted(const std::string& client, int fd) {
+        invitedUsers[client] = fd;
     }
 
     // Add an operator to the channel

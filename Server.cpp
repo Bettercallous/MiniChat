@@ -149,6 +149,30 @@ std::string trim(const std::string& str) {
     return str.substr(first, last - first + 1);
 }
 
+std::string formatCreationTime() {
+    // Get the current time
+    std::time_t currentTime = std::time(NULL);
+    // Convert the current time to tm struct for easier manipulation
+    std::tm* localTime = std::localtime(&currentTime);
+
+    // Format the time string manually
+    char buffer[80]; // Buffer to hold the formatted time string
+    std::strftime(buffer, sizeof(buffer), "%a %b %d %H:%M:%S %Y", localTime);
+    return std::string(buffer);
+}
+
+
+std::string constructCreationTimeMessage(const std::string& channelName) {
+    std::stringstream ss;
+    ss << "Channel #" << channelName << " created " << formatCreationTime();
+    return ss.str();
+}
+std::string constructJoinedTimeMessage(const std::string& channelName) {
+    std::stringstream ss;
+    ss << "Channel #" << channelName << " Joined " << formatCreationTime();
+    return ss.str();
+}
+
 
 // here i create the channel and add the nicks of the users with some checks
 void Server::createChannel(const std::string& channelName, const std::string& nickname, int fd) {
@@ -164,6 +188,7 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         // Send JOIN message to the client
         std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
         send(fd, joinMessage.c_str(), joinMessage.length(), 0);
+
         // Send MODE message to the client
         std::string modeMessage = ":irc.example.com MODE #" + channelName + " +nt\n";
         send(fd, modeMessage.c_str(), modeMessage.length(), 0);
@@ -176,30 +201,34 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
         send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
 
+    std::string creationTimeMessage = constructCreationTimeMessage(channelName);
+    std::string channelMessage = ":irc.example.com 354 " + channelName + " " + creationTimeMessage + "\n";
+    send(fd, channelMessage.c_str(), channelMessage.length(), 0);
+
         // Insert the new channel into the map
         channels.insert(std::make_pair(channelName, newChannel));
 
     } else {
     // Channel already exists, just add the user to it
     it->second.addClient(nickname, fd);
+    std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
 
     // Send JOIN message to the client
     std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
     send(fd, joinMessage.c_str(), joinMessage.length(), 0);
 
     // Send CHANNEL TOPIC message to the client
-    std::string topicMessage = ":irc.example.com 332 " + nickname + " #" + channelName + " :This is my cool channel! https://irc.com\n";
+    std::cout << "this is the topi and he good :  "<< channels[channelName].getTopic()  << std::endl;
+    std::string topicMessage = ":irc.example.com 332 " + nickname + " #" + channelName + " :" + channels[channelName].getTopic() + " https://irc.com\n";
     send(fd, topicMessage.c_str(), topicMessage.length(), 0);
 
     // Send CHANNEL CREATION TIME message to the client
-    std::string creationTimeMessage = ":irc.example.com 333 " + nickname + " #" + channelName + " dan!~d@localhost 1547691506\n";
-    send(fd, creationTimeMessage.c_str(), creationTimeMessage.length(), 0);
 
     // Send NAMES message to the client
     std::string namesMessage = ":irc.example.com 353 " + nickname + " @ #" + channelName + " :";
 
     const std::vector<std::string>& clients = channels[channelName].getClients();
-    std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
+    
 
     for (size_t i = 0; i < clients.size(); ++i) {
         const std::string& user = clients[i];
@@ -219,6 +248,12 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
     // Send END OF NAMES message to the client
     std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
     send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+
+    std::string creationTimeMessage = constructJoinedTimeMessage(channelName);
+    std::string channelMessage = ":irc.example.com 354 " + channelName + " " + creationTimeMessage + "\n";
+    send(fd, channelMessage.c_str(), channelMessage.length(), 0);
+
+    smallbroadcastMessageforjoin(nickname, channelName);
 }
 }
 
@@ -308,6 +343,24 @@ void Server::handlePrivateMessage(int senderFd, const std::string& recipient, co
     }
 }
 
+void Server::handleInvitation(int senderFd, const std::string& recipient, std::string channelName) {
+    // Find the recipient's connection (socket file descriptor)
+    int recipientFd = findUserFd1(recipient);
+    // std::string  sendernameuser = findUsernameforsending(senderFd);
+
+    if (recipientFd != -1) {
+        // Construct the invitation message
+        std::string inviteMessage = ":" + nicknames[senderFd] + " INVITE " + recipient + " :#" + channelName + "\r\n";
+
+        // Send the invitation message to the recipient
+        send(recipientFd, inviteMessage.c_str(), inviteMessage.length(), 0);
+    } else {
+        // Handle case where recipient is not found (e.g., user not online)
+        std::string errorMessage = ":server.host NOTICE " + nicknames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
+        send(senderFd, errorMessage.c_str(), errorMessage.length(), 0);
+    }
+}
+
 //this find is for finding nickname of the users i need to brodcasting to 
 int Server::findUserFd1(const std::string& username) {
     std::map<int, std::string>::iterator it;
@@ -378,20 +431,11 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
 }
 
 void Server::smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason) {
-    // Check if the channel exists
     std::map<std::string, Channel>::iterator it = channels.find(channelname);
     if (it == channels.end()) {
         std::cerr << "Channel " << channelname << " does not exist" << std::endl;
         return;
     }
-
-    // if (channels[channelname].findUserFdForKickRegulars(nicknamesender) == -1)
-    // {
-    //     std::cout << "this user kicked from the channel" << std::endl;
-    //     return;
-    // }
-    // Construct the IRC message with the correct format for broadcasting
-    // std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
     std::string kickMessage = ":" + nicknamesender + " KICK #" + channelname + " " + usertokick + " :" + reason + "\n";
 
     // Get a reference to the vector of clients in the channel
@@ -402,27 +446,77 @@ void Server::smallbroadcastMessagefortheckick(std::string nicknamesender , const
         // Get the current client nickname
         const std::string& client = clients[i];
 
-        // Skip sending the message to the sender
-        // std::cout << "this is the client name : "<< client <<  std::endl;
-        // std::cout << "this is the nickname name : " << senderNickname << std::endl;
-
         if (client == nicknamesender) {
             continue;
         }
-
-        // Find the file descriptor associated with the client nickname
         int recipientFd = it->second.getUserFd(client);
-
-        // If the file descriptor is found, send the message to the client
         if (recipientFd != -1) {
-            // std::cout << message << std::endl;
             send(recipientFd, kickMessage.c_str(), kickMessage.size(), 0);
         } else {
-            // If the file descriptor is not found, print an error message
             std::cerr << "Client " << client << " not found" << std::endl;
         }
     }
 }
+
+void Server::smallbroadcastMessageforjoin(std::string nicknamesender , const std::string& channelname) {
+    std::map<std::string, Channel>::iterator it = channels.find(channelname);
+    if (it == channels.end()) {
+        std::cerr << "Channel " << channelname << " does not exist" << std::endl;
+        return;
+    }
+    std::string joinMessage = ":" + nicknamesender + " JOIN #" + channelname + "\n";
+
+    // Get a reference to the vector of clients in the channel
+    const std::vector<std::string>& clients = it->second.getClients();
+
+    // Iterate over the vector of clients and send the message to each one
+    for (size_t i = 0; i < clients.size(); ++i) {
+        // Get the current client nickname
+        const std::string& client = clients[i];
+
+        if (client == nicknamesender) {
+            continue;
+        }
+        int recipientFd = it->second.getUserFd(client);
+        if (recipientFd != -1) {
+            send(recipientFd, joinMessage.c_str(), joinMessage.size(), 0);
+        } else {
+            std::cerr << "Client " << client << " not found" << std::endl;
+        }
+    }
+}
+
+
+void Server::smallbroadcastMessageforTopic(std::string nicknamesender, const std::string& channelname, std::string topic) {
+    std::map<std::string, Channel>::iterator it = channels.find(channelname);
+    if (it == channels.end()) {
+        std::cerr << "Channel " << channelname << " does not exist" << std::endl;
+        return;
+    }
+
+    // Construct the topic message
+    std::string topicMessage = ":" + nicknamesender + " TOPIC #" + channelname + " :" + topic + "\n";
+
+    // Get a reference to the vector of clients in the channel
+  const std::vector<std::string>& clients = it->second.getClients();
+
+    // Iterate over the vector of clients and send the message to each one
+    for (size_t i = 0; i < clients.size(); ++i) {
+        // Get the current client nickname
+        const std::string& client = clients[i];
+
+        if (client == nicknamesender) {
+            continue;
+        }
+        int recipientFd = it->second.getUserFd(client);
+        if (recipientFd != -1) {
+            send(recipientFd, topicMessage.c_str(), topicMessage.size(), 0);
+        } else {
+            std::cerr << "Client " << client << " not found" << std::endl;
+        }
+    }
+}
+
 
 
 
@@ -670,6 +764,43 @@ void Server::handleClientData(int fd) {
              } else {
                 std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + userToKick + "\r\n";
                 send(fd, errorMessage.c_str(), errorMessage.size(), 0);             }
+            }
+            else if (startsWith(command, "TOPIC ")){
+                std::string channelName, topic;
+                std::istringstream iss(command.substr(7));
+                iss >> channelName;
+                std::getline(iss, topic);
+                channelName = trim(channelName);
+                topic = trim(topic);
+                topic = topic.substr(1);
+
+                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                {
+                    channels[channelName].setTopic(topic);
+                    smallbroadcastMessageforTopic(channels[channelName].getNickname(fd), channelName, topic );
+                } else {
+                    std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                }
+
+
+            }
+            else if (startsWith(command, "INVITE "))
+            {
+                std::string channelName, nickname;
+                std::istringstream iss(command.substr(7));
+                iss >> nickname >> channelName;
+                channelName = trim(channelName);
+                nickname = trim(nickname);
+                channelName = channelName.substr(1);
+                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                {
+                    channels[channelName].addClientinveted(nickname, fd);
+                    handleInvitation(fd, nickname, channelName);
+                } else {
+                    std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                }
             }
 
 //**************** STOOOOOOP HERE TOP G ... 

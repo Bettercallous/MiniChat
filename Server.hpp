@@ -17,6 +17,9 @@
 #include <cstring>
 #include <map>
 #include "channel.hpp"
+#include <ctime>
+#include <ctime>
+#include <iomanip>
 #define BUFFER_SIZE 1024
 
 
@@ -48,12 +51,15 @@ class Server {
         void setPassword(const std::string& password); 
         void setUsernameoperators(int fd, const std::string& username);
         void setUsernames(int fd, const std::string& username);
-
+        std::string formatCreationTime();
         void setUsernameregular(int fd, const std::string& username);
         void createChannel(const std::string& channel, const std::string& nickname, int fd);
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);
+        void handleInvitation(int senderFd, const std::string& recipient, std::string channelName);
         void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg, int fd);
         void smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason);
+        void smallbroadcastMessageforjoin(std::string nicknamesender , const std::string& channelname);
+        void smallbroadcastMessageforTopic(std::string nicknamesender, const std::string& channelname, std::string topic);
         int findUserFd1(const std::string& username);
         std::string findUsernameforsending(int fd);
         bool isOperator(int fd);
