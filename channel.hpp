@@ -105,6 +105,17 @@ public:
     return false; // File descriptor not found in the map
     }
 
+    bool isInvited(std::string nickname) {
+    // Iterate through the map of operators
+    for (std::map<std::string, int>::iterator it = invitedUsers.begin(); it != invitedUsers.end(); ++it) {
+        // Check if the file descriptor matches
+        if (it->first == nickname) {
+            return true; // Found the file descriptor in the map
+        }
+    }
+    return false; // File descriptor not found in the map
+    }
+
     
 
     int findUserFdForKickRegulars(const std::string& username) {

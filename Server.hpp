@@ -60,7 +60,7 @@ class Server {
         void smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason);
         void smallbroadcastMessageforjoin(std::string nicknamesender , const std::string& channelname);
         void smallbroadcastMessageforTopic(std::string nicknamesender, const std::string& channelname, std::string topic);
-        void smallbroadcastMOOD(std::string nicknamesender, const std::string& channelname, std::string mode);
+        void smallbroadcastMOOD(std::string nicknamesender, const std::string& channelname, std::string mode, std::string receiver);
         int findUserFd1(const std::string& username);
         std::string findUsernameforsending(int fd);
         bool isOperator(int fd);
