@@ -52,6 +52,8 @@ class Server {
         void setUsernameoperators(int fd, const std::string& username);
         void setUsernames(int fd, const std::string& username);
         std::string formatCreationTime();
+        std::string constructCreationTimeMessage(const std::string& channelName);
+        std::string constructJoinedTimeMessage(const std::string& channelName);
         void setUsernameregular(int fd, const std::string& username);
         void createChannel(const std::string& channel, const std::string& nickname, int fd);
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);

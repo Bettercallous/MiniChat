@@ -117,8 +117,30 @@ void Server::handleClientConnection() {
             if (newFd == -1) {
                 throw std::runtime_error("Error: accept() failed");
             }
-            std::string passwordRequest = "Please enter the password:\n";
+            std::string passwordRequest = "Please Enter The password Of This Server :\n";
+
+
+
+std::string art =
+    " ________                    ______                            ______                                \n"
+    "/        |                  /      \\                          /      \\                               \n"
+    "$$$$$$$/______    ______  /$$$$$$  |                        /$$$$$$  |  ______    ______   __     __  ______    ______ \n"
+    "   $$ | /      \\  /      \\ $$ | _$$/                         $$ \\__$$/  /      \\  /      \\ /  \\   /  |/      \\  /      \\\n"
+    "   $$ |/$$$$$$  |/$$$$$$  |$$ |/    |                        $$      \\ /$$$$$$  |/$$$$$$  |$$  \\ /$$//$$$$$$  |/$$$$$$  |\n"
+    "   $$ |$$ |  $$ |$$ |  $$ |$$ |$$$$ |                         $$$$$$  |$$    $$ |$$ |  $$/  $$  /$$/ $$    $$ |$$ |  $$/ \n"
+    "   $$ |$$ \\__$$ |$$ |__$$ |$$ \\__$$ |                        /  \\__$$ |$$$$$$$$/ $$ |        $$ $$/  $$$$$$$$/ $$ |     \n"
+    "   $$ |$$    $$/ $$    $$/ $$    $$/                         $$    $$/ $$       |$$ |         $$$/   $$       |$$ |     \n"
+    "   $$/  $$$$$$/  $$$$$$$/   $$$$$$/                           $$$$$$/   $$$$$$$/ $$/           $/     $$$$$$$/ $$/      \n"
+    "                 $$ |                                                                                               \n"
+    "                 $$ |                                                                                               \n"
+    "                 $$/                                                                                                \n";
+
+            send(newFd, art.c_str(), art.length(), 0);
+
+        
             send(newFd, passwordRequest.c_str(), passwordRequest.length(), 0);
+
+
 
             addPollfd(newFd, POLLIN, 0);
             _clients.push_back(Client(newFd, inet_ntoa((client_addr.sin_addr))));
@@ -151,7 +173,7 @@ std::string trim(const std::string& str) {
     return str.substr(first, last - first + 1);
 }
 
-std::string formatCreationTime() {
+std::string Server::formatCreationTime() {
     // Get the current time
     std::time_t currentTime = std::time(NULL);
     // Convert the current time to tm struct for easier manipulation
@@ -164,12 +186,12 @@ std::string formatCreationTime() {
 }
 
 
-std::string constructCreationTimeMessage(const std::string& channelName) {
+std::string Server::constructCreationTimeMessage(const std::string& channelName) {
     std::stringstream ss;
     ss << "Channel #" << channelName << " created " << formatCreationTime();
     return ss.str();
 }
-std::string constructJoinedTimeMessage(const std::string& channelName) {
+std::string Server::constructJoinedTimeMessage(const std::string& channelName) {
     std::stringstream ss;
     ss << "Channel #" << channelName << " Joined " << formatCreationTime();
     return ss.str();
@@ -194,19 +216,19 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         send(fd, joinMessage.c_str(), joinMessage.length(), 0);
 
         // Send MODE message to the client
-        std::string modeMessage = ":irc.example.com MODE #" + channelName + " +nt\n";
+        std::string modeMessage = ":irc.TopG MODE #" + channelName + " +nt\n";
         send(fd, modeMessage.c_str(), modeMessage.length(), 0);
 
         // Send NAMES message to the client
-        std::string namesMessage = ":irc.example.com 353 " + nickname + " = #" + channelName + " :@" + nickname + "\n";
+        std::string namesMessage = ":irc.TopG 353 " + nickname + " = #" + channelName + " :@" + nickname + "\n";
         send(fd, namesMessage.c_str(), namesMessage.length(), 0);
 
         // Send END OF NAMES message to the client
-        std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
+        std::string endOfNamesMessage = ":irc.TopG 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
         send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
 
     std::string creationTimeMessage = constructCreationTimeMessage(channelName);
-    std::string channelMessage = ":irc.example.com 354 " + channelName + " " + creationTimeMessage + "\n";
+    std::string channelMessage = ":irc.TopG 354 " + channelName + " " + creationTimeMessage + "\n";
     send(fd, channelMessage.c_str(), channelMessage.length(), 0);
 
         // Insert the new channel into the map
@@ -223,13 +245,13 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
 
     // Send CHANNEL TOPIC message to the client
     std::cout << "this is the topi and he good :  "<< channels[channelName].getTopic()  << std::endl;
-    std::string topicMessage = ":irc.example.com 332 " + nickname + " #" + channelName + " :" + channels[channelName].getTopic() + " https://irc.com\n";
+    std::string topicMessage = ":irc.TopG 332 " + nickname + " #" + channelName + " :" + channels[channelName].getTopic() + " https://irc.com\n";
     send(fd, topicMessage.c_str(), topicMessage.length(), 0);
 
     // Send CHANNEL CREATION TIME message to the client
 
     // Send NAMES message to the client
-    std::string namesMessage = ":irc.example.com 353 " + nickname + " @ #" + channelName + " :";
+    std::string namesMessage = ":irc.TopG 353 " + nickname + " @ #" + channelName + " :";
 
     const std::vector<std::string>& clients = channels[channelName].getClients();
     
@@ -628,22 +650,14 @@ void Server::handleClientData(int fd) {
                 std::string  passwordoftheserver = getPassowrd();
                 if (passwordoftheserver != password)
                 {
-                    std::string errorMessage = "Error: Incorrect password\n";
+                    std::string errorMessage = "Error: Incorrect Password\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                 }
                 else {
-                    std::string confirmation = "Welcome sir\n";
+                    std::string confirmation = "Please Enter Your Nickname : \n";
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
                     a = 1;
                 }
-
-                // for (size_t i = 0; i < _clients.size(); ++i) {
-                //     if (_clients[i].getFd() == fd) {
-                //         _clients[i].setPassword(password);
-                //         std::cout << "Password set for client " << fd << ": " << password << std::endl;
-                //         break;
-                //     }
-                // }
             }
             else if (startsWith(command, "PING"))
             {
@@ -678,7 +692,9 @@ void Server::handleClientData(int fd) {
 
 
                 // Send a response back to the client confirming the action
-                sendResponse(fd, "Nickname set to: " + nick + '\n');
+                std::string confirmation = "Please Enter Your Username : \n";
+                send(fd, confirmation.c_str(), confirmation.length(), 0);
+
                 a = 2;
             } else if (startsWith(command, "user") && a == 2) {
 
@@ -703,13 +719,10 @@ void Server::handleClientData(int fd) {
                 }
                 a = 0;
 
-                sendResponse(fd, "username set to: " + username + '\n');
-                sendResponse(fd, "realname set to: " + realname + '\n');
-
-                std::string one = ":irc.l9oroch 001 " + nickname + " :Welcome to the l9oroch Network, " + nickname + '\n';
-                std::string two = ":irc.l9oroch 002 " + nickname + " :Your host is l9oroch, running version 3030" + '\n';
-                std::string tre = ":irc.l9oroch 003 " + nickname + " :This server was created Tue Nov 30 2011 at 11:11:25 EET" + '\n';
-                std::string foor = ":irc.l9oroch 004 " + nickname + " l9oroch tella(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) oOiwscrknfbghexzSjFI bhijklmMnoOstvcdSuU bkohv" + '\n';
+                std::string one = ":irc.l9oroch 001 " + nickname + " :Welcome to the TopG Network, " + nickname + '\n';
+                std::string two = ":irc.l9oroch 002 " + nickname + " :Your host is TopG, running version 4.5" + '\n';
+                std::string tre = ":irc.l9oroch 003 " + nickname + " :This server was created " + formatCreationTime() + '\n';
+                std::string foor = ":irc.l9oroch 004 " + nickname + " TopG TopG(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) TopG TopG TopG" + '\n';
                 send(fd, one.c_str(), one.length(), 0);
                 send(fd, two.c_str(), two.length(), 0);
                 send(fd, tre.c_str(), tre.length(), 0);
@@ -851,6 +864,8 @@ void Server::handleClientData(int fd) {
                 if ((channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) || issettop == 1)
                 {
                     channels[channelName].setTopic(topic);
+                    std::string topicMessage = ":" + channels[channelName].getNickname(fd) + " TOPIC #" + channelName + " :" + topic + "\n";
+                    send(fd, topicMessage.c_str(), topicMessage.size(), 0);
                     smallbroadcastMessageforTopic(channels[channelName].getNickname(fd), channelName, topic );
                 } else {
                     std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error2: You are not authorized to execute this command " + "\r\n";
@@ -893,6 +908,8 @@ void Server::handleClientData(int fd) {
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
                         channels[channelName].addOperator(nick, channels[channelName].getUserFd(nick));
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and set " + nick + " as operator\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                     }
                     else
@@ -906,6 +923,8 @@ void Server::handleClientData(int fd) {
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
                         channels[channelName].removeOperator(nick);
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and set " + nick + " as operator\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                     }
                     else
@@ -917,6 +936,8 @@ void Server::handleClientData(int fd) {
                 else if (mode == "-t")
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                         issettop = 1;
                     }
@@ -929,6 +950,8 @@ void Server::handleClientData(int fd) {
                 else if (mode == "+t")
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                         issettop = 0;
                     }
@@ -942,6 +965,8 @@ void Server::handleClientData(int fd) {
                 {
 
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +i by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                         isinveted = 1;
                         
@@ -956,6 +981,8 @@ void Server::handleClientData(int fd) {
                 else if (mode == "-i")
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " -i by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                         isinveted = 0;
                     }
@@ -964,6 +991,10 @@ void Server::handleClientData(int fd) {
                         std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
                         send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                     }
+                }
+                else if (mode == "-t")
+                {
+
                 }
             }
 //**************** STOOOOOOP HERE TOP G ... 
