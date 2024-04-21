@@ -25,6 +25,7 @@ private:
     std::string topic;
     std::string key;
     std::vector<std::string> users;
+    std::string pass;
     // std::map<int, std::string> nicknames; // Replace unordered_map with map
     std::map<std::string, int> userFdMap; // Mapping of usernames to file descriptors
     std::map<std::string, int> invitedUsers;
@@ -45,10 +46,19 @@ public:
         topic = newTopic;
     }
 
+    void setPass(const std::string &Newpass)
+    {
+        pass = Newpass;
+    }
     // Get topic function
     std::string getTopic() const {
         return topic;
     
+    }
+
+    std::string getPass()
+    {
+        return pass;
     }
 
     void addClient(const std::string& client, int fd) {

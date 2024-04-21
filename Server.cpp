@@ -3,6 +3,7 @@ int a = 0;
 int opperatorfd = 0;
 int issettop = 0;
 int isinveted = 0;
+int itHasPass = 0;
 
 
 bool Server::_signal = false;
@@ -759,9 +760,14 @@ void Server::handleClientData(int fd) {
                         break;
                     }
                 }
-
-                std::string channelName = command.substr(6);
+                std::string channelName, pass ;
+                // std::string channelName = command.substr(6);
+                std::istringstream iss(command.substr(5));
+                iss >> channelName ;
+                channelName = channelName.substr(1);
                 channelName = trim(channelName);
+                std::getline(iss, pass);
+                pass = trim(pass);
 
                 // Check if the channel already exists
                 std::map<std::string, Channel>::iterator it = channels.find(channelName);
@@ -774,15 +780,27 @@ void Server::handleClientData(int fd) {
                     } 
                     else if (isinveted == 0){
                         std::cout << "ha huwa dkhaal l ******** ltania ***********" << std::endl;
-                        createChannel(channelName, nick, fd);
+                        std::cout << "this is the geted pass " << channels[channelName].getPass() << std::endl;
+                        std::cout << "IM PASS " << pass << std::endl; 
+                        std::cout << "PASS MODE IS ON" << std::endl;
+                        if (itHasPass == 1 && channels[channelName].getPass() == pass)
+                            createChannel(channelName, nick, fd);
+                        else if (itHasPass == 0)
+                            createChannel(channelName, nick, fd);
+                        else if (itHasPass == 1 && channels[channelName].getPass() != pass)
+                            std::cout << "ZAPI " << std::endl;
 
                     }
+        
                     else {
                         // User is not invited, send error message
                         std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you are not invited\r\n";
                         send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                     }
-                } else {
+
+                } 
+                else 
+                {
 
                     std::cout << "ha huwa dkhal l ********* tania *********** " << std::endl;
                     // Channel does not exist, create the channel
@@ -992,9 +1010,38 @@ void Server::handleClientData(int fd) {
                         send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                     }
                 }
-                else if (mode == "-t")
+                else if (mode == "-k")
                 {
-
+                    std::string ChanPass = (mode.substr(2));
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " -k by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+                        itHasPass = 0;
+                    }
+                    else
+                    {
+                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error7: You are not authorized to execute this command " + "\r\n";
+                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                    }
+                }
+                else if (mode == "+k")
+                {
+                    // std::string ChanPass = (mo.substr(2));
+                    nick = trim(nick);
+                    std::cout << "HI IM TRIMMED PASS " << nick << std::endl;
+                    channels[channelName].setPass(nick);
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +k by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+                        itHasPass = 1;
+                    }
+                    else
+                    {
+                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error8: You are not authorized to execute this command " + "\r\n";
+                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                    }
                 }
             }
 //**************** STOOOOOOP HERE TOP G ... 
