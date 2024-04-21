@@ -754,7 +754,7 @@ void Server::handleClientData(int fd) {
                 std::map<std::string, Channel>::iterator it = channels.find(channelName);
                 if (it != channels.end()) {
                     // Channel already exists
-                    if ((isinveted == 1 && it->second.isInvited(nick)) || it->second.isOperator(fd)) {
+                    if ((isinveted == 1 && channels[channelName].isInvited(nick)) || channels[channelName].isOperator(fd)) {
                         // User is invited, create the channel
                         std::cout << "ha huwa dkhaal l ******** lwla ***********" << std::endl;
                         createChannel(channelName, nick, fd);
@@ -823,7 +823,9 @@ void Server::handleClientData(int fd) {
                     if (userFd != -1) {
             // Kick the user
                         // kickUser(userFd);
-                        channels[channelName].ejectUser(userFd);
+                        channels[channelName].ejectUserfromusers(userFd);
+                        channels[channelName].ejectUserfromivited(userToKick);
+                        // isinveted = 0;
                         std::string kickMessage = ":" + channels[channelName].getNickname(fd) + " KICK #" + channelName + " " + userToKick + " :" + reason + "\n";
                         smallbroadcastMessagefortheckick(channels[channelName].getNickname(fd), channelName, userToKick, reason);
                         send(fd, kickMessage.c_str(), kickMessage.length(), 0);

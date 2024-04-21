@@ -130,13 +130,26 @@ public:
 }
 
 
- void ejectUser(int fd) {
+ void ejectUserfromusers(int fd) {
     // Iterate over the map to find the user with the given file descriptor
     std::map<std::string, int>::iterator it;
     for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
         if (it->second == fd) {
             // Erase the user from the map
             userFdMap.erase(it);
+            std::cout << "the user earased " << std::endl;
+            return; // Exit the function after removing the user
+        }
+    }
+}
+
+ void ejectUserfromivited(std::string nickname) {
+    // Iterate over the map to find the user with the given file descriptor
+    std::map<std::string, int>::iterator it;
+    for (it = invitedUsers.begin(); it != invitedUsers.end(); ++it) {
+        if (it->first == nickname) {
+            // Erase the user from the map
+            invitedUsers.erase(it);
             std::cout << "the user earased " << std::endl;
             return; // Exit the function after removing the user
         }
