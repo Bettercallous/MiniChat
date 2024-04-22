@@ -689,7 +689,7 @@ void Server::handleClientData(int fd) {
                             int check = channels[channelName].getlimitechannel();
                             std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
                             std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
-                            if (limitechannelforincriment < check)
+                            if (limitechannelforincriment < check || limitechannel == 0)
                                 createChannel(channelName, nick, fd);
                             else
                             {
@@ -707,7 +707,7 @@ void Server::handleClientData(int fd) {
                             int check = channels[channelName].getlimitechannel();
                             std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
                             std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
-                            if (limitechannelforincriment < check)
+                            if (limitechannelforincriment < check || limitechannel == 0)
                                 createChannel(channelName, nick, fd);
                             else
                             {
@@ -720,7 +720,7 @@ void Server::handleClientData(int fd) {
                             int check = channels[channelName].getlimitechannel();
                             std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
                             std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
-                            if (limitechannelforincriment < check)
+                            if (limitechannelforincriment < check || limitechannel == 0)
                                 createChannel(channelName, nick, fd);
                             else
                             {
