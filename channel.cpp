@@ -13,9 +13,19 @@ void Channel::setoperator(int value)
     opperatorfd = value;
 }
 
-bool Channel::getoperator()
+int Channel::getoperator()
 {
     return opperatorfd;
+}
+
+void Channel::setlimitchannel(int value)
+{
+    limite = value;
+}
+
+int Channel::getlimitechannel()
+{
+    return limite;
 }
 
 void Channel::setbooltopic(bool value)

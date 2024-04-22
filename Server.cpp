@@ -4,7 +4,8 @@ int opperatorfd = 0;
 int issettop = 0;
 int isinveted = 0;
 int itHasPass = 0;
-
+int limitechannel = 0;
+int limitechannelforincriment = 0;
 
 bool Server::_signal = false;
 
@@ -220,6 +221,13 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
 
     else
     {
+        if (channels[channelName].findUserFdForKickRegulars(nickname) == -1 && limitechannel == 1)
+        {
+            std::cout << "here we incriment the limite for check again : " << limitechannelforincriment << std::endl;
+            limitechannelforincriment = limitechannelforincriment + 1;
+            
+        }
+
     // Channel already exists, just add the user to it
         it->second.addClient(nickname, fd);
         std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
@@ -480,6 +488,18 @@ void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& c
     else if (mode == "-i"){
         modeChangeMessage = ":server.host MODE #" + channelname + " -i by " + nicknamesender + "\n";
     }
+    else if (mode == "+k"){
+        modeChangeMessage = ":server.host MODE #" + channelname + " +k by " + nicknamesender + "\n";
+    }
+    else if (mode == "-k"){
+        modeChangeMessage = ":server.host MODE #" + channelname + " -k by " + nicknamesender + "\n";
+    }
+    else if (mode == "-l"){
+        modeChangeMessage = ":server.host MODE #" + channelname + " -l by " + nicknamesender + "\n";
+    }
+    else if (mode == "+l"){
+        modeChangeMessage = ":server.host MODE #" + channelname + " +l by " + nicknamesender + "\n";
+    }
 
     int senderFd = it->second.getUserFd(nicknamesender);
 
@@ -506,7 +526,12 @@ void Server::kickUser(int fd) {
     }
 }
 
-
+int stringToInt(const std::string& str) {
+    std::stringstream ss(str);
+    int result;
+    ss >> result;
+    return result;
+}
 
 // ........AND FINISH HERE ......//////
 
@@ -661,7 +686,16 @@ void Server::handleClientData(int fd) {
                     if ((isinveted == 1 && channels[channelName].isInvited(nick)) || channels[channelName].isOperator(fd)) {
                         // User is invited, create the channel
                         std::cout << "ha huwa dkhaal l ******** lwla ***********" << std::endl;
-                        createChannel(channelName, nick, fd);
+                            int check = channels[channelName].getlimitechannel();
+                            std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
+                            std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
+                            if (limitechannelforincriment < check)
+                                createChannel(channelName, nick, fd);
+                            else
+                            {
+                                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL LIMITE\r\n";
+                                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                            }
                     } 
                     else if (isinveted == 0){
                         std::cout << "ha huwa dkhaal l ******** ltania ***********" << std::endl;
@@ -669,14 +703,38 @@ void Server::handleClientData(int fd) {
                         std::cout << "IM PASS " << pass << std::endl; 
                         std::cout << "PASS MODE IS ON" << std::endl;
                         if (itHasPass == 1 && channels[channelName].getPass() == pass)
-                            createChannel(channelName, nick, fd);
+                        {
+                            int check = channels[channelName].getlimitechannel();
+                            std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
+                            std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
+                            if (limitechannelforincriment < check)
+                                createChannel(channelName, nick, fd);
+                            else
+                            {
+                                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL LIMITE\r\n";
+                                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                            }
+                        }
                         else if (itHasPass == 0)
-                            createChannel(channelName, nick, fd);
+                        {
+                            int check = channels[channelName].getlimitechannel();
+                            std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
+                            std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
+                            if (limitechannelforincriment < check)
+                                createChannel(channelName, nick, fd);
+                            else
+                            {
+                                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL LIMITE\r\n";
+                                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                            }
+                        }
                         else if (itHasPass == 1 && channels[channelName].getPass() != pass)
-                            std::cout << "ZAPI " << std::endl;
+                        {
+                            std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you need a password for this channel\r\n";
+                            send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                        }
 
                     }
-        
                     else {
                         // User is not invited, send error message
                         std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you are not invited\r\n";
@@ -687,7 +745,7 @@ void Server::handleClientData(int fd) {
                 else 
                 {
 
-                    std::cout << "ha huwa dkhal l ********* tania *********** " << std::endl;
+                    std::cout << "ha huwa dkhal l ********* talta *********** " << std::endl;
                     // Channel does not exist, create the channel
                     createChannel(channelName, nick, fd);
                 }
@@ -814,10 +872,12 @@ void Server::handleClientData(int fd) {
             else if (startsWith(command, "MODE "))
             {
                 std::string channelName, mode , nick;
+                int limit;
                 std::istringstream iss(command.substr(6));
                 iss >> channelName >> mode >> nick;
                 channelName = trim(channelName);
                 mode = trim(mode);
+                if (mode == "+l")
                 nick = trim(nick);
                 std::map<std::string, Channel>::iterator it = channels.find(channelName);
 
@@ -928,7 +988,6 @@ void Server::handleClientData(int fd) {
                 }
                 else if (mode == "+k")
                 {
-                    // std::string ChanPass = (mo.substr(2));
                     nick = trim(nick);
                     std::cout << "HI IM TRIMMED PASS " << nick << std::endl;
                     channels[channelName].setPass(nick);
@@ -941,6 +1000,38 @@ void Server::handleClientData(int fd) {
                     else
                     {
                         std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error8: You are not authorized to execute this command " + "\r\n";
+                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                    }
+                }
+                else if (mode == "+l")
+                {
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                        int limit = stringToInt(nick);
+                        std::cout << "this is the limite when he limited piiiiiwwww : " << limit << std::endl;
+                        channels[channelName].setlimitchannel(limit);
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +l by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+                        limitechannel = 1;
+                    }
+                    else
+                    {
+                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
+                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                    }
+                }
+                else if (mode == "-l")
+                {
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +l by " + channels[channelName].getNickname(fd) + "\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+                        limitechannel = 0;
+                        limitechannelforincriment = 0;
+                    }
+                    else
+                    {
+                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
                         send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                     }
                 }

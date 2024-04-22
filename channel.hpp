@@ -25,6 +25,7 @@ private:
     std::string topic;
     std::string key;
     std::string pass;
+    int limite;
     std::map<std::string, int> userFdMap; // Mapping of usernames to file descriptors
     std::map<std::string, int> invitedUsers;
     std::map<std::string, int>  operators;
@@ -42,7 +43,11 @@ public:
 
     //checks
     void setoperator(int value);
-    bool getoperator();
+    int getoperator();
+
+    //check 
+    void setlimitchannel(int value);
+    int getlimitechannel();
 
     //checks
     void setbooltopic(bool value);
