@@ -123,18 +123,18 @@ void Server::handleClientConnection() {
 
 
 std::string art =
-    " ________                    ______                            ______                                \n"
-    "/        |                  /      \\                          /      \\                               \n"
-    "$$$$$$$/______    ______  /$$$$$$  |                        /$$$$$$  |  ______    ______   __     __  ______    ______ \n"
-    "   $$ | /      \\  /      \\ $$ | _$$/                         $$ \\__$$/  /      \\  /      \\ /  \\   /  |/      \\  /      \\\n"
-    "   $$ |/$$$$$$  |/$$$$$$  |$$ |/    |                        $$      \\ /$$$$$$  |/$$$$$$  |$$  \\ /$$//$$$$$$  |/$$$$$$  |\n"
-    "   $$ |$$ |  $$ |$$ |  $$ |$$ |$$$$ |                         $$$$$$  |$$    $$ |$$ |  $$/  $$  /$$/ $$    $$ |$$ |  $$/ \n"
-    "   $$ |$$ \\__$$ |$$ |__$$ |$$ \\__$$ |                        /  \\__$$ |$$$$$$$$/ $$ |        $$ $$/  $$$$$$$$/ $$ |     \n"
-    "   $$ |$$    $$/ $$    $$/ $$    $$/                         $$    $$/ $$       |$$ |         $$$/   $$       |$$ |     \n"
-    "   $$/  $$$$$$/  $$$$$$$/   $$$$$$/                           $$$$$$/   $$$$$$$/ $$/           $/     $$$$$$$/ $$/      \n"
-    "                 $$ |                                                                                               \n"
-    "                 $$ |                                                                                               \n"
-    "                 $$/                                                                                                \n";
+    " ________                    ______      \n"
+    "/        |                  /      \\     \n"
+    "$$$$$$$/______    ______  /$$$$$$  |       \n"
+    "   $$ | /      \\  /      \\ $$ | _$$/     \n"
+    "   $$ |/$$$$$$  |/$$$$$$  |$$ |/    |      \n"
+    "   $$ |$$ |  $$ |$$ |  $$ |$$ |$$$$ |       \n"
+    "   $$ |$$ \\__$$ |$$ |__$$ |$$ \\__$$ |    \n"
+    "   $$ |$$    $$/ $$    $$/ $$    $$/    \n"
+    "   $$/  $$$$$$/  $$$$$$$/   $$$$$$/  \n"
+    "                 $$ |                     \n"
+    "                 $$ |                     \n"
+    "                 $$/                      \n";
 
             send(newFd, art.c_str(), art.length(), 0);
 
@@ -155,33 +155,22 @@ std::string art =
 
 // FUNCTIONS OF TOP GGGGGG.. START FROM HEEEREEE 
 
-
-
 //triiiiiiiiiiiimmmmmm
 std::string trim(const std::string& str) {
-    // Find the first non-whitespace character
     size_t first = str.find_first_not_of(" \t\n\r");
-
-    // If the string is all whitespace, return an empty string
     if (std::string::npos == first) {
         return "";
     }
-
-    // Find the last non-whitespace character
     size_t last = str.find_last_not_of(" \t\n\r");
 
-    // Return the trimmed substring
     return str.substr(first, last - first + 1);
 }
 
 std::string Server::formatCreationTime() {
-    // Get the current time
     std::time_t currentTime = std::time(NULL);
-    // Convert the current time to tm struct for easier manipulation
     std::tm* localTime = std::localtime(&currentTime);
 
-    // Format the time string manually
-    char buffer[80]; // Buffer to hold the formatted time string
+    char buffer[80]; 
     std::strftime(buffer, sizeof(buffer), "%a %b %d %H:%M:%S %Y", localTime);
     return std::string(buffer);
 }
@@ -211,178 +200,96 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         newChannel.addClient(nickname, fd);
         newChannel.addOperator(nickname, fd);
         opperatorfd = fd;
+        std::string creationTimeMessage = constructCreationTimeMessage(channelName);
 
-        // Send JOIN message to the client
         std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
         send(fd, joinMessage.c_str(), joinMessage.length(), 0);
-
-        // Send MODE message to the client
         std::string modeMessage = ":irc.TopG MODE #" + channelName + " +nt\n";
         send(fd, modeMessage.c_str(), modeMessage.length(), 0);
-
-        // Send NAMES message to the client
         std::string namesMessage = ":irc.TopG 353 " + nickname + " = #" + channelName + " :@" + nickname + "\n";
         send(fd, namesMessage.c_str(), namesMessage.length(), 0);
-
-        // Send END OF NAMES message to the client
         std::string endOfNamesMessage = ":irc.TopG 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
         send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
-
-    std::string creationTimeMessage = constructCreationTimeMessage(channelName);
-    std::string channelMessage = ":irc.TopG 354 " + channelName + " " + creationTimeMessage + "\n";
-    send(fd, channelMessage.c_str(), channelMessage.length(), 0);
+        std::string channelMessage = ":irc.TopG 354 " + channelName + " " + creationTimeMessage + "\n";
+        send(fd, channelMessage.c_str(), channelMessage.length(), 0);
 
         // Insert the new channel into the map
         channels.insert(std::make_pair(channelName, newChannel));
 
-    } else {
-    // Channel already exists, just add the user to it
-    it->second.addClient(nickname, fd);
-    std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
-
-    // Send JOIN message to the client
-    std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
-    send(fd, joinMessage.c_str(), joinMessage.length(), 0);
-
-    // Send CHANNEL TOPIC message to the client
-    std::cout << "this is the topi and he good :  "<< channels[channelName].getTopic()  << std::endl;
-    std::string topicMessage = ":irc.TopG 332 " + nickname + " #" + channelName + " :" + channels[channelName].getTopic() + " https://irc.com\n";
-    send(fd, topicMessage.c_str(), topicMessage.length(), 0);
-
-    // Send CHANNEL CREATION TIME message to the client
-
-    // Send NAMES message to the client
-    std::string namesMessage = ":irc.TopG 353 " + nickname + " @ #" + channelName + " :";
-
-    const std::vector<std::string>& clients = channels[channelName].getClients();
-    
-
-    for (size_t i = 0; i < clients.size(); ++i) {
-        const std::string& user = clients[i];
-        if (user == operators) {
-            namesMessage += "@" + user;
-        } else {
-            namesMessage += user;
-        }
-
-        if (i < clients.size() - 1) {
-            namesMessage += " ";
-        }
     }
-    namesMessage += "\n";
-    send(fd, namesMessage.c_str(), namesMessage.length(), 0);
 
-    // Send END OF NAMES message to the client
-    std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
-    send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+    else
+    {
+    // Channel already exists, just add the user to it
+        it->second.addClient(nickname, fd);
+        std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
+        std::string creationTimeMessage = constructJoinedTimeMessage(channelName);
 
-    std::string creationTimeMessage = constructJoinedTimeMessage(channelName);
-    std::string channelMessage = ":irc.example.com 354 " + channelName + " " + creationTimeMessage + "\n";
-    send(fd, channelMessage.c_str(), channelMessage.length(), 0);
 
-    smallbroadcastMessageforjoin(nickname, channelName);
-}
+        // Send JOIN message to the client
+        std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
+        send(fd, joinMessage.c_str(), joinMessage.length(), 0);
+        std::cout << "this is the topi and he good :  "<< channels[channelName].getTopic()  << std::endl;
+        std::string topicMessage = ":irc.TopG 332 " + nickname + " #" + channelName + " :" + channels[channelName].getTopic() + " https://irc.com\n";
+        send(fd, topicMessage.c_str(), topicMessage.length(), 0);
+        std::string namesMessage = ":irc.TopG 353 " + nickname + " @ #" + channelName + " :";
+        const std::vector<std::string>& clients = channels[channelName].getClients();
+
+
+        for (size_t i = 0; i < clients.size(); ++i) {
+            const std::string& user = clients[i];
+            if (user == operators) {
+                namesMessage += "@" + user;
+            } else {
+                namesMessage += user;
+            }
+
+            if (i < clients.size() - 1) {
+                namesMessage += " ";
+            }
+        }
+        namesMessage += "\n";
+        send(fd, namesMessage.c_str(), namesMessage.length(), 0);
+        std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
+        send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+        std::string channelMessage = ":irc.example.com 354 " + channelName + " " + creationTimeMessage + "\n";
+        send(fd, channelMessage.c_str(), channelMessage.length(), 0);
+
+        smallbroadcastMessageforjoin(nickname, channelName);
+    }
 }
 
 bool startsWith(const std::string& str, const std::string& prefix) {
     return str.substr(0, prefix.length()) == prefix;
 }
 
- void Server::setNickname(int fd, const std::string& nickname) {
-        nicknames[fd] = nickname; // Associate the nickname with the client's socket descriptor
+void Server::setNickname(int fd, const std::string& nickname) {
+        nicknames[fd] = nickname;
     }
 
- void Server::setUsernameoperators(int fd, const std::string& username) {
-        usernamesoperators[fd] = username; // Associate the nickname with the client's socket descriptor
+void Server::setUsernames(int fd, const std::string& username) {
+        usernames[fd] = username; 
     }
- void Server::setUsernames(int fd, const std::string& username) {
-        usernames[fd] = username; // Associate the nickname with the client's socket descriptor
-    }
- void Server::setUsernameregular(int fd, const std::string& username) {
-        usernamesregulars[fd] = username; // Associate the nickname with the client's socket descriptor
-    }
-
-//it's a just a response for my client 
-void sendResponse(int fd, const std::string& message) {
-        // Convert the message string to a C-style string
-        const char* msg = message.c_str();
-        
-        // Get the length of the message
-        size_t len = strlen(msg);                 
-        
-        // Send the message to the client
-        ssize_t bytesSent = send(fd, msg, len, 0);
-        
-        // Check if the send operation was successful
-        if (bytesSent == -1) {
-            // Handle send error
-            // You can log an error message or take appropriate action
-            std::cerr << "Error sending response to client <" << fd << ">" << std::endl;
-        } else {
-            // Output the sent message to the console
-            std::cout << "Response sent to client <" << fd << ">: " << message << std::endl;
-        }
-    }
-
-
-
-//here finding the users for the handling the privet msg 
-int findUserFd(const std::string& nickname, const std::map<int, std::string>& usernames) {
-    // Iterate over each entry in the usernames map
-    for (std::map<int, std::string>::const_iterator it = usernames.begin(); it != usernames.end(); ++it) {
-        // Check if the nickname matches
-        if (it->second == nickname) {
-            // Return the file descriptor associated with the nickname
-            return it->first;
-        }
-    }
-    // Return -1 if the nickname is not found
-    return -1;
-}
-
-
-///iterate to find the username with the fd
-
-// std::string Server::findUsernameforsending(int fd) {
-//     std::map<int, std::string>::iterator it;
-//     for (it = usernames.begin(); it != usernames.end(); ++it) {
-//         if (it->first == fd) {
-//             return it->second; // Return the file descriptor if the nickname matches
-//         }
-//     }
-// }
-//forget it
 
 //handling privet msg between users only 
 void Server::handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message) {
-    // Find the recipient's connection (socket file descriptor)
     int recipientFd = findUserFd1(recipient);
-    // std::string  sendernameuser = findUsernameforsending(senderFd);
-
     if (recipientFd != -1) {
-        // Forward the private message to the recipient's client
         std::string privateMessage = ":" + nicknames[senderFd] + " PRIVMSG " + recipient + " :" + message + "\r\n";
         send(recipientFd, privateMessage.c_str(), privateMessage.length(), 0);
     } else {
-        // Handle case where recipient is not found (e.g., user not online)
         std::string errorMessage = ":server.host NOTICE " + nicknames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
         send(senderFd, errorMessage.c_str(), errorMessage.length(), 0);
     }
 }
 
 void Server::handleInvitation(int senderFd, const std::string& recipient, std::string channelName) {
-    // Find the recipient's connection (socket file descriptor)
     int recipientFd = findUserFd1(recipient);
-    // std::string  sendernameuser = findUsernameforsending(senderFd);
 
     if (recipientFd != -1) {
-        // Construct the invitation message
         std::string inviteMessage = ":" + nicknames[senderFd] + " INVITE " + recipient + " :#" + channelName + "\r\n";
-
-        // Send the invitation message to the recipient
         send(recipientFd, inviteMessage.c_str(), inviteMessage.length(), 0);
     } else {
-        // Handle case where recipient is not found (e.g., user not online)
         std::string errorMessage = ":server.host NOTICE " + nicknames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
         send(senderFd, errorMessage.c_str(), errorMessage.length(), 0);
     }
@@ -393,25 +300,45 @@ int Server::findUserFd1(const std::string& username) {
     std::map<int, std::string>::iterator it;
     for (it = nicknames.begin(); it != nicknames.end(); ++it) {
         if (it->second == username) {
-            return it->first; // Return the file descriptor if the nickname matches
+            return it->first; 
         }
     }
-    return -1; // Return -1 if the nickname is not found
+    return -1;
+}
+
+bool Server::dontputthesamenick(const std::string& nickname) {
+    std::map<int, std::string>::iterator it;
+    for (it = nicknames.begin(); it != nicknames.end(); ++it) {
+        if (it->second == nickname) {
+            return true; 
+        }
+    }
+    return false; 
+}
+
+bool Server::dontputthesameusername(const std::string& username) {
+    std::map<int, std::string>::iterator it;
+    for (it = usernames.begin(); it != usernames.end(); ++it) {
+        if (it->second == username) {
+            return true; 
+        }
+    }
+    return false; 
 }
 
 int Server::findUserFdforkickregulars(const std::string& username) {
     std::map<int, std::string>::iterator it;
     for (it = usernamesregulars.begin(); it != usernamesregulars.end(); ++it) {
         if (it->second == username) {
-            return it->first; // Return the file descriptor if the nickname matches
+            return it->first;
         }
     }
-    return -1; // Return -1 if the nickname is not found
+    return -1;
 }
+
+
 // brodcasting msg to all nicks in the  channel 
 void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg, int fd) {
-    // Check if the channel exists
-    debugPrintChannels();
     std::map<std::string, Channel>::iterator it = channels.find(channel);
     if (it == channels.end()) {
         std::cerr << "Channel " << channel << " does not exist" << std::endl;
@@ -422,19 +349,13 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
     {
         return;
     }
-    // Construct the IRC message with the correct format for broadcasting
     std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
 
-
-    // Get a reference to the vector of clients in the channel
     const std::vector<std::string>& clients = it->second.getClients();
 
-    // Iterate over the vector of clients and send the message to each one
     for (size_t i = 0; i < clients.size(); ++i) {
-        // Get the current client nickname
         const std::string& client = clients[i];
 
-        // Skip sending the message to the sender
         std::cout << "this is the client name : "<< client <<  std::endl;
         std::cout << "this is the nickname name : " << senderNickname << std::endl;
 
@@ -442,19 +363,18 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
             continue;
         }
 
-        // Find the file descriptor associated with the client nickname
         int recipientFd = it->second.getUserFd(client);
 
-        // If the file descriptor is found, send the message to the client
         if (recipientFd != -1) {
             std::cout << message << std::endl;
             send(recipientFd, message.c_str(), message.size(), 0);
         } else {
-            // If the file descriptor is not found, print an error message
             std::cerr << "Client " << client << " not found" << std::endl;
         }
     }
 }
+
+
 
 void Server::smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason) {
     std::map<std::string, Channel>::iterator it = channels.find(channelname);
@@ -464,12 +384,9 @@ void Server::smallbroadcastMessagefortheckick(std::string nicknamesender , const
     }
     std::string kickMessage = ":" + nicknamesender + " KICK #" + channelname + " " + usertokick + " :" + reason + "\n";
 
-    // Get a reference to the vector of clients in the channel
     const std::vector<std::string>& clients = it->second.getClients();
 
-    // Iterate over the vector of clients and send the message to each one
     for (size_t i = 0; i < clients.size(); ++i) {
-        // Get the current client nickname
         const std::string& client = clients[i];
 
         if (client == nicknamesender) {
@@ -492,12 +409,9 @@ void Server::smallbroadcastMessageforjoin(std::string nicknamesender , const std
     }
     std::string joinMessage = ":" + nicknamesender + " JOIN #" + channelname + "\n";
 
-    // Get a reference to the vector of clients in the channel
     const std::vector<std::string>& clients = it->second.getClients();
 
-    // Iterate over the vector of clients and send the message to each one
     for (size_t i = 0; i < clients.size(); ++i) {
-        // Get the current client nickname
         const std::string& client = clients[i];
 
         if (client == nicknamesender) {
@@ -520,15 +434,11 @@ void Server::smallbroadcastMessageforTopic(std::string nicknamesender, const std
         return;
     }
 
-    // Construct the topic message
     std::string topicMessage = ":" + nicknamesender + " TOPIC #" + channelname + " :" + topic + "\n";
 
-    // Get a reference to the vector of clients in the channel
   const std::vector<std::string>& clients = it->second.getClients();
 
-    // Iterate over the vector of clients and send the message to each one
     for (size_t i = 0; i < clients.size(); ++i) {
-        // Get the current client nickname
         const std::string& client = clients[i];
 
         if (client == nicknamesender) {
@@ -545,13 +455,13 @@ void Server::smallbroadcastMessageforTopic(std::string nicknamesender, const std
 
 
 void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& channelname, std::string mode, std::string receiver) {
+
     std::map<std::string, Channel>::iterator it = channels.find(channelname);
     if (it == channels.end()) {
         std::cerr << "Channel " << channelname << " does not exist" << std::endl;
         return;
     }
 
-    // Construct the mode change message
     std::string modeChangeMessage;
     if (mode == "+t") {
         modeChangeMessage = ":server.host MODE #" + channelname + " +t by " + nicknamesender + "\n";
@@ -571,15 +481,11 @@ void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& c
         modeChangeMessage = ":server.host MODE #" + channelname + " -i by " + nicknamesender + "\n";
     }
 
-    // Get the file descriptor of the sender
     int senderFd = it->second.getUserFd(nicknamesender);
 
-    // Get a reference to the vector of clients in the channel
     const std::vector<std::string>& clients = it->second.getClients();
 
-    // Iterate over the vector of clients and send the message to each one
     for (size_t i = 0; i < clients.size(); ++i) {
-        // Get the current client nickname
         const std::string& client = clients[i];
 
         int recipientFd = it->second.getUserFd(client);
@@ -592,24 +498,10 @@ void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& c
 }
 
 
-
-
-//check if ope or not
-// bool Server::isOperator(int fd) {
-//     // Check if the file descriptor exists in the map of operators
-//     int fd = 
-// }
-
-
 void Server::kickUser(int fd) {
-    // Close the socket connection for the given file descriptor
     close(fd);
-
-    // Remove the user from any data structures tracking active connections
-    // For example, if you have a map of file descriptors to usernames:
     std::map<int, std::string>::iterator it = usernamesregulars.find(fd);
     if (it != usernamesregulars.end()) {
-        // Remove the user from the map
         usernamesregulars.erase(it);
     }
 }
@@ -663,96 +555,89 @@ void Server::handleClientData(int fd) {
             else if (startsWith(command, "PING"))
             {
                 std::istringstream iss(command);
-
                 std::string serverHostname = command.substr(5); // Skip the "PING " prefix
-
-// Construct the PONG message with the server hostname
                 std::string pongMessage = "PONG " + serverHostname + "\r\n";
-
-// Send the PONG message back to the client
                 send(fd, pongMessage.c_str(), pongMessage.length(), 0);
                 std::cout << "ping was sent" << std::endl;
             }
-            else if (startsWith(command, "nick") && a == 1) {
+
+            else if (startsWith(command, "nick") && a == 1) 
+            {
                 std::string cmd, nick;
                 std::istringstream iss(command);
                 iss >> cmd >> nick;
                 nick = trim(nick);
-                setNickname(fd, nick);
-                for (size_t i = 0; i < _clients.size(); ++i) {
-                    if (_clients[i].getFd() == fd) {
-                        _clients[i].setNick(nick);
-                        std::cout << "Password set for client " << fd << ": " << nick << std::endl;
-                        break;
-                    }
+                if (dontputthesamenick(nick) == true)
+                {
+                    std::string confirmation = "Please Use a Different Nickname : \n";
+                    send(fd, confirmation.c_str(), confirmation.length(), 0);
                 }
-                // Extract the nickname from the command
-                // std::string nickname = command.substr(8); // Assuming "/setnick " is 9 characters long
+                else
+                {
+                    setNickname(fd, nick);
+                    for (size_t i = 0; i < _clients.size(); ++i)
+                    {
+                        if (_clients[i].getFd() == fd)
+                        {
+                            _clients[i].setNick(nick);
+                            std::cout << "Password set for client " << fd << ": " << nick << std::endl;
+                            break;
+                        }
+                    }
+                    std::string confirmation = "Please Enter Your Username : \n";
+                    send(fd, confirmation.c_str(), confirmation.length(), 0);
 
-                // Handle setting the nickname for the client's connection
+                    a = 2;
 
-
-                // Send a response back to the client confirming the action
-                std::string confirmation = "Please Enter Your Username : \n";
-                send(fd, confirmation.c_str(), confirmation.length(), 0);
-
-                a = 2;
-            } else if (startsWith(command, "user") && a == 2) {
+                }
+            } 
+            
+            else if (startsWith(command, "user") && a == 2) 
+            {
 
                 std::istringstream iss(command);
                 std::string cmd, username, dontworry, dontworry1, realname, nickname;
                 iss >> cmd >> username >> dontworry >> dontworry1 >> realname;
-                // Remove leading and trailing whitespace from parameters
                 username = trim(username);
                 dontworry = trim(dontworry);
                 dontworry1 = trim(dontworry1);
                 realname = trim(realname);
 
-                setUsernames(fd, username);
-
-                for (size_t i = 0; i < _clients.size(); ++i) {
-                    if (_clients[i].getFd() == fd) {
-                        _clients[i].setUser(username);
-                        _clients[i].setName(realname);
-                        nickname = _clients[i].getNick();
-                        break;
-                    }
+                if (dontputthesameusername(username) == true)
+                {
+                    std::string confirmation = "Please Use a Different Nickname : \n";
+                    send(fd, confirmation.c_str(), confirmation.length(), 0);
                 }
-                a = 0;
+                else
+                {
+                    setUsernames(fd, username);
 
-                std::string one = ":irc.l9oroch 001 " + nickname + " :Welcome to the TopG Network, " + nickname + '\n';
-                std::string two = ":irc.l9oroch 002 " + nickname + " :Your host is TopG, running version 4.5" + '\n';
-                std::string tre = ":irc.l9oroch 003 " + nickname + " :This server was created " + formatCreationTime() + '\n';
-                std::string foor = ":irc.l9oroch 004 " + nickname + " TopG TopG(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) TopG TopG TopG" + '\n';
-                send(fd, one.c_str(), one.length(), 0);
-                send(fd, two.c_str(), two.length(), 0);
-                send(fd, tre.c_str(), tre.length(), 0);
-                send(fd, foor.c_str(), foor.length(), 0);
+                    for (size_t i = 0; i < _clients.size(); ++i)
+                    {
+                        if (_clients[i].getFd() == fd)
+                        {
+                            _clients[i].setUser(username);
+                            _clients[i].setName(realname);
+                            nickname = _clients[i].getNick();
+                            break;
+                        }
+                    }
+                    a = 0;
 
+                    std::string one = ":irc.l9oroch 001 " + nickname + " :Welcome to the TopG Network, " + nickname + '\n';
+                    std::string two = ":irc.l9oroch 002 " + nickname + " :Your host is TopG, running version 4.5" + '\n';
+                    std::string tre = ":irc.l9oroch 003 " + nickname + " :This server was created " + formatCreationTime() + '\n';
+                    std::string foor = ":irc.l9oroch 004 " + nickname + " TopG TopG(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) TopG TopG TopG" + '\n';
+                    send(fd, one.c_str(), one.length(), 0);
+                    send(fd, two.c_str(), two.length(), 0);
+                    send(fd, tre.c_str(), tre.length(), 0);
+                    send(fd, foor.c_str(), foor.length(), 0);
 
+                }
 
-                
-
-
-
-
-                // if (privilege_level == "operator" )
-                // {
-                //     //si moskir hna atbda lkhdma dyalk 
-                //     // std::cout << "we need to handle this " << std::endl;
-                //     setUsernameoperators(fd, username);
-                //     sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
-                // }
-                // else if (privilege_level == "regular") {
-                //     setUsernameregular(fd, username);
-                //     sendResponse(fd, "Username set to: " + username + " with privilege_level : " + privilege_level + '\n');
-
-                // }
-                
-
-                // Process other commands or messages
-                // processCommand(fd, command);
-            } else if (startsWith(command, "JOIN ")) {
+            } 
+            
+           else if (startsWith(command, "JOIN ")) {
                 std::string nick;
                 for (size_t i = 0; i < _clients.size(); ++i) {
                     if (_clients[i].getFd() == fd) {
@@ -807,8 +692,9 @@ void Server::handleClientData(int fd) {
                     createChannel(channelName, nick, fd);
                 }
 
-            } else if (startsWith(command, "PRIVMSG ")) {
-                    // Extract the recipient and the message from the command
+            } 
+            else if (startsWith(command, "PRIVMSG ")) 
+            {
                     std::istringstream iss(command);
                     std::string cmd, recipient, message;
                     std::string niiick;
@@ -822,12 +708,14 @@ void Server::handleClientData(int fd) {
 
                         recipient = recipient.substr(1);
                         std::cout << "this the chanel name and was good : " << recipient << std::endl;
-                        for (size_t i = 0; i < _clients.size(); ++i) {
-                            if (_clients[i].getFd() == fd) {
+                        for (size_t i = 0; i < _clients.size(); ++i)
+                        {
+                            if (_clients[i].getFd() == fd)
+                            {
                                 niiick =  _clients[i].getNick();
                                 break;
+                            }
                         }
-                    }
                         broadcastMessage(recipient, niiick, message, fd);
                     }
                     else
@@ -837,8 +725,10 @@ void Server::handleClientData(int fd) {
                     std::cout << "Recipient: " << recipient << std::endl;
                     std::cout << "Message: " << message << std::endl;
             }
-            else if (startsWith(command, "KICK ")) {
-    // Extract the channel name and user to be kicked
+
+
+            else if (startsWith(command, "KICK "))
+            {
                 std::string channelName, userToKick, reason;
                 std::istringstream iss(command.substr(6));
                 iss >> channelName >> userToKick;
@@ -847,30 +737,34 @@ void Server::handleClientData(int fd) {
                 userToKick = trim(userToKick);
                 reason = trim(reason);
 
-    // Check if the sender is an operator in the specified channel
-                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
-        // Check if the user to be kicked is online
+                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                {
                     int userFd = channels[channelName].findUserFdForKickRegulars(userToKick);
-                    if (userFd != -1) {
-            // Kick the user
-                        // kickUser(userFd);
+                    if (userFd != -1) 
+                    {
                         channels[channelName].ejectUserfromusers(userFd);
                         channels[channelName].ejectUserfromivited(userToKick);
-                        // isinveted = 0;
                         std::string kickMessage = ":" + channels[channelName].getNickname(fd) + " KICK #" + channelName + " " + userToKick + " :" + reason + "\n";
                         smallbroadcastMessagefortheckick(channels[channelName].getNickname(fd), channelName, userToKick, reason);
                         send(fd, kickMessage.c_str(), kickMessage.length(), 0);
                         send(userFd , kickMessage.c_str(), kickMessage.length(), 0);
-                    } else {
-                             std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: the user : " + userToKick + " is not found or offline." + "\r\n";
-
+                    } 
+                    else 
+                    {
+                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: the user : " + userToKick + " is not found or offline." + "\r\n";
                         send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                     }
-             } else {
-                std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error1: You are not authorized to execute this command " + userToKick + "\r\n";
-                send(fd, errorMessage.c_str(), errorMessage.size(), 0);             }
+                }
+                else 
+                {
+                    std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error1: You are not authorized to execute this command " + userToKick + "\r\n";
+                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+                }
             }
-            else if (startsWith(command, "TOPIC ")){
+
+
+            else if (startsWith(command, "TOPIC "))
+            {
                 std::string channelName, topic;
                 std::istringstream iss(command.substr(7));
                 iss >> channelName;
@@ -885,13 +779,16 @@ void Server::handleClientData(int fd) {
                     std::string topicMessage = ":" + channels[channelName].getNickname(fd) + " TOPIC #" + channelName + " :" + topic + "\n";
                     send(fd, topicMessage.c_str(), topicMessage.size(), 0);
                     smallbroadcastMessageforTopic(channels[channelName].getNickname(fd), channelName, topic );
-                } else {
+                }
+                else
+                {
                     std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error2: You are not authorized to execute this command " + "\r\n";
                     send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                 }
 
 
             }
+
             else if (startsWith(command, "INVITE "))
             {
                 std::string channelName, nickname;
@@ -905,11 +802,15 @@ void Server::handleClientData(int fd) {
                     channels[channelName].addClientinveted(nickname, fd);
                     std::cout << "this client is invited : " << nickname << std::endl;
                     handleInvitation(fd, nickname, channelName);
-                } else {
+                }
+                else
+                {
                     std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error3: You are not authorized to execute this command " + "\r\n";
                     send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                 }
             }
+
+
             else if (startsWith(command, "MODE "))
             {
                 std::string channelName, mode , nick;

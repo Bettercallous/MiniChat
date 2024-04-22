@@ -68,6 +68,8 @@ class Server {
         bool isOperator(int fd);
         void kickUser(int fd);
         int findUserFdforkickregulars(const std::string& username);
+        bool dontputthesamenick(const std::string& nickname);
+        bool dontputthesameusername(const std::string& username);
         // AND END HERE.
         void parseArgs(int ac, char **av);
         static void receiveSignal(int signum);
@@ -81,14 +83,6 @@ class Server {
         void handleClientData(int fd);
         void clientCleanup(int fd);
         void closeFds();
-
-        void debugPrintChannels() {
-    std::cout << "List of channels:" << std::endl;
-    std::map<std::string, Channel>::iterator it;
-    for (it = channels.begin(); it != channels.end(); ++it) {
-        std::cout << "- " << it->first << std::endl; // Print the channel name (it->first)
-    }
-}
 };
 
 #endif
