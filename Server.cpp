@@ -50,14 +50,14 @@ void Server::init() {
     signal(SIGQUIT, receiveSignal);
 
     createServerSocket();
-    std::cout << ">>> SERVER STARTED <<<" << std::endl;
-    std::cout << "Waiting for connections..." << std::endl;
+    std::cout << GREEN << ">>> SERVER STARTED <<<" << RESET << std::endl;
+    std::cout << CYAN <<"Waiting for connections..." << RESET << std::endl;
 }
 
 void Server::run() {
     while (!_signal) {
         int ret = poll(&_fds[0], _fds.size(), -1);
-        if (ret == -1)
+        if (ret == -1 && !_signal)
             throw std::runtime_error("Error: poll() failed");
 
         for (size_t i = 0; i < _fds.size(); ++i) {
