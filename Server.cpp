@@ -111,15 +111,13 @@ void Server::addPollfd(int fd, short events, short revents) {
 }
 
 void Server::handleClientConnection() {
-    for (size_t i = 0; i < _fds.size(); ++i) {
-        if (_fds[i].fd == _serverSocketFd && (_fds[i].revents & POLLIN)) {
-            struct sockaddr_in client_addr;
-            socklen_t clientAddrSize = sizeof(sockaddr_in);
-            int newFd = accept(_serverSocketFd, (struct sockaddr *)&client_addr, &clientAddrSize);
-            if (newFd == -1) {
-                throw std::runtime_error("Error: accept() failed");
-            }
-            std::string passwordRequest = "Please Enter The password Of This Server :\n";
+    struct sockaddr_in client_addr;
+    socklen_t clientAddrSize = sizeof(sockaddr_in);
+    int newFd = accept(_serverSocketFd, (struct sockaddr *)&client_addr, &clientAddrSize);
+    if (newFd == -1) {
+        throw std::runtime_error("Error: accept() failed");
+    }
+    std::string passwordRequest = "Please Enter The password Of This Server :\n";
 
 
 
@@ -137,20 +135,13 @@ std::string art =
     "                 $$ |                     \n"
     "                 $$/                      \n";
 
-            send(newFd, art.c_str(), art.length(), 0);
-
+        send(newFd, art.c_str(), art.length(), 0);
+    
+        send(newFd, passwordRequest.c_str(), passwordRequest.length(), 0);
+        addPollfd(newFd, POLLIN, 0);
+        _clients.push_back(Client(newFd, inet_ntoa((client_addr.sin_addr))));
         
-            send(newFd, passwordRequest.c_str(), passwordRequest.length(), 0);
-
-
-
-            addPollfd(newFd, POLLIN, 0);
-            _clients.push_back(Client(newFd, inet_ntoa((client_addr.sin_addr))));
-            
-
-            std::cout << "Client <" << newFd << "> Connected" << std::endl;
-        }
-    }
+        std::cout << "Client <" << newFd << "> Connected" << std::endl;
 }
 
 
