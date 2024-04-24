@@ -21,6 +21,12 @@ std::string Server::getPassowrd() const {
     return _password;
 }
 
+std::string intToString(int number) {
+    std::stringstream ss;
+    ss << number;
+    return ss.str();
+}
+
 void Server::parseArgs(int ac, char **av) {
     if (ac != 3)
         throw std::runtime_error("Usage: ./ircserv <port> <password>");
@@ -866,29 +872,42 @@ void Server::handleClientData(int fd)
                 }
             }
 
-            else if (startsWith(command, "BOT "))
+            else if (startsWith(command, "BOT ") || startsWith(command, "bot "))
             {
-                std::string channelName, botname, start, end, guessed;
+                std::cout << "HHHDFGFGD " << std::endl;
+                std::string start, end, guessed;
                 std::istringstream iss(command.substr(4));
-                iss >> channelName >> botname >> start >> end >> guessed;
-                channelName = trim(channelName);
-                botname = trim(botname);
+                iss >> start >> end >> guessed;
                 start = trim(start);
                 end = trim(end);
                 guessed = trim(guessed);
-                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                // std::string channelName, botname, start, end, guessed;
+                // std::istringstream iss(command.substr(4));
+                // iss >> channelName >> botname >> start >> end >> guessed;
+                // channelName = trim(channelName);
+                // botname = trim(botname);
+                // start = trim(start);
+                // end = trim(end);
+                // guessed = trim(guessed);
+                if (stringToInt(start) < stringToInt(end) && stringToInt(guessed) >= stringToInt(start) && stringToInt(guessed) <= stringToInt(end))
                 {
-                    int random = randomInRange(stringToInt(start), stringToInt(end));
-                    if (random == stringToInt(guessed))
+                    int r = randomInRange(stringToInt(start), stringToInt(end));
+                    std::string random = intToString(r);
+                    if (random == guessed)
                     {
-                        std::string modeChangeMessage = ":server.host PRIVMSG #" + channelName + " :Congratulations " + botname + " you have guessed the number " + guessed + " correctly\n";
+                        std::string modeChangeMessage = ":server.host PRIVMSG #:Congratulations ,you have guessed the number : " + guessed + " correctly\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                     }
                     else
                     {
-                        std::string modeChangeMessage = ":server.host PRIVMSG #" + channelName + " :Sorry " + botname + " you have guessed the number " + guessed + " incorrectly\n";
+                        std::string modeChangeMessage = ":server.host PRIVMSG #:Sorry ,the correct one is : " + random + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                     }
+                }
+                else 
+                {
+                    std::string errorMessage = ":server.host PRIVMSG # :Error: Invalid range or guess\n";
+                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                 }
             }
             else if (startsWith(command, "MODE ") || startsWith(command, "mode "))

@@ -92,6 +92,7 @@ class Server {
       
 };
 
-int  randomInRange(int min, int max);
+int randomInRange(int min, int max);
+std::string intToString(int number);
 
 #endif
