@@ -553,7 +553,7 @@ void Server::handleClientData(int fd)
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
 
 //******************* FROM THERE IM STARTING TOP GGG ************  .
-            if (startsWith(command, "pass"))
+            if (startsWith(command, "pass") || startsWith(command, "PASS"))
             {
                 std::string cmd, password;
                 std::istringstream iss(command);
@@ -571,6 +571,7 @@ void Server::handleClientData(int fd)
                     a = 1;
                 }
             }
+
             else if (startsWith(command, "PING"))
             {
                 std::istringstream iss(command);
@@ -580,12 +581,18 @@ void Server::handleClientData(int fd)
                 std::cout << "ping was sent" << std::endl;
             }
 
-            else if (startsWith(command, "nick") && a == 1) 
+            else if ((startsWith(command, "nick") || startsWith(command, "NICK")) && a == 1) 
             {
                 std::string cmd, nick;
                 std::istringstream iss(command);
                 iss >> cmd >> nick;
                 nick = trim(nick);
+                if (iss.fail())
+                {
+                    std::string errorMessage = "Error: Command requires 1 parameters\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    return;
+                }
                 if (dontputthesamenick(nick) == true)
                 {
                     std::string confirmation = "Please Use a Different Nickname : \n";
@@ -611,7 +618,7 @@ void Server::handleClientData(int fd)
                 }
             } 
             
-            else if (startsWith(command, "user") && a == 2) 
+            else if ((startsWith(command, "user") || startsWith(command, "USER")) && a == 2) 
             {
 
                 std::istringstream iss(command);
@@ -622,6 +629,12 @@ void Server::handleClientData(int fd)
                 dontworry1 = trim(dontworry1);
                 realname = trim(realname);
 
+                if (iss.fail())
+                {
+                    std::string errorMessage = "Error: Command requires at least four parameters\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    return;
+                }
                 if (dontputthesameusername(username) == true)
                 {
                     std::string confirmation = "Please Use a Different Nickname : \n";
@@ -665,7 +678,6 @@ void Server::handleClientData(int fd)
                     }
                 }
                 std::string channelName, pass ;
-                // std::string channelName = command.substr(6);
                 std::istringstream iss(command.substr(5));
                 iss >> channelName ;
                 if (channelName[0] != '#')
@@ -682,14 +694,13 @@ void Server::handleClientData(int fd)
 
                 // Check if the channel already exists
                 std::map<std::string, Channel>::iterator it = channels.find(channelName);
-                if (it != channels.end()) {
+                if (it != channels.end()) 
+                {
                     // Channel already exists
-                    if ((isinveted == 1 && channels[channelName].isInvited(nick)) || channels[channelName].isOperator(fd)) {
+                    if ((isinveted == 1 && channels[channelName].isInvited(nick)) || channels[channelName].isOperator(fd))
+                    {
                         // User is invited, create the channel
-                        std::cout << "ha huwa dkhaal l ******** lwla ***********" << std::endl;
                             int check = channels[channelName].getlimitechannel();
-                            std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
-                            std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
                             if (limitechannelforincriment < check || limitechannel == 0)
                                 createChannel(channelName, nick, fd);
                             else
@@ -698,16 +709,11 @@ void Server::handleClientData(int fd)
                                 send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                             }
                     } 
-                    else if (isinveted == 0){
-                        std::cout << "ha huwa dkhaal l ******** ltania ***********" << std::endl;
-                        std::cout << "this is the geted pass " << channels[channelName].getPass() << std::endl;
-                        std::cout << "IM PASS " << pass << std::endl; 
-                        std::cout << "PASS MODE IS ON" << std::endl;
+                    else if (isinveted == 0)
+                    {
                         if (itHasPass == 1 && channels[channelName].getPass() == pass)
                         {
                             int check = channels[channelName].getlimitechannel();
-                            std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
-                            std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
                             if (limitechannelforincriment < check || limitechannel == 0)
                                 createChannel(channelName, nick, fd);
                             else
@@ -719,8 +725,6 @@ void Server::handleClientData(int fd)
                         else if (itHasPass == 0)
                         {
                             int check = channels[channelName].getlimitechannel();
-                            std::cout << "im now in the main function CCHEEEECK GETED FROM THE CLASSE : " << check << std::endl;
-                            std::cout << "the LIMITATION INCRIMENTED : " << limitechannelforincriment << std::endl;
                             if (limitechannelforincriment < check || limitechannel == 0)
                                 createChannel(channelName, nick, fd);
                             else
@@ -736,7 +740,8 @@ void Server::handleClientData(int fd)
                         }
 
                     }
-                    else {
+                    else
+                    {
                         // User is not invited, send error message
                         std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you are not invited\r\n";
                         send(fd, errorMessage.c_str(), errorMessage.length(), 0);
@@ -744,12 +749,7 @@ void Server::handleClientData(int fd)
 
                 } 
                 else 
-                {
-
-                    std::cout << "ha huwa dkhal l ********* talta *********** " << std::endl;
-                    // Channel does not exist, create the channel
                     createChannel(channelName, nick, fd);
-                }
 
             } 
             else if (startsWith(command, "PRIVMSG ") || startsWith(command, "privmsg ")) 
@@ -781,8 +781,6 @@ void Server::handleClientData(int fd)
                     {
                         handlePrivateMessage(fd, recipient, message);
                     }
-                    std::cout << "Recipient: " << recipient << std::endl;
-                    std::cout << "Message: " << message << std::endl;
             }
 
 
@@ -859,7 +857,6 @@ void Server::handleClientData(int fd)
                 if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
                 {
                     channels[channelName].addClientinveted(nickname, fd);
-                    std::cout << "this client is invited : " << nickname << std::endl;
                     handleInvitation(fd, nickname, channelName);
                 }
                 else
@@ -910,7 +907,8 @@ void Server::handleClientData(int fd)
                 std::cout << "this is the mode : " << mode << std::endl;
                 if (mode == "+o")
                 {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         channels[channelName].addOperator(nick, channels[channelName].getUserFd(nick));
                         abaaba = channels[channelName].getUserFd(nick);
 
@@ -927,7 +925,8 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "-o")
                 {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         channels[channelName].removeOperator(nick);
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and set " + nick + " as operator\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
@@ -941,7 +940,8 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "-t")
                 {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
@@ -955,7 +955,8 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "+t")
                 {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
@@ -970,7 +971,8 @@ void Server::handleClientData(int fd)
                 else if (mode == "+i")
                 {
 
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " +i by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
@@ -986,7 +988,8 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "-i")
                 {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " -i by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
@@ -1001,7 +1004,8 @@ void Server::handleClientData(int fd)
                 else if (mode == "-k")
                 {
                     std::string ChanPass = (mode.substr(2));
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " -k by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
@@ -1018,7 +1022,8 @@ void Server::handleClientData(int fd)
                     nick = trim(nick);
                     std::cout << "HI IM TRIMMED PASS " << nick << std::endl;
                     channels[channelName].setPass(nick);
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " +k by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
@@ -1032,7 +1037,8 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "+l")
                 {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         int limit = stringToInt(nick);
                         std::cout << "this is the limite when he limited piiiiiwwww : " << limit << std::endl;
                         channels[channelName].setlimitchannel(limit);
@@ -1049,7 +1055,8 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "-l")
                 {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)){
+                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                    {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " +l by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
