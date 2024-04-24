@@ -7,15 +7,15 @@ int itHasPass = 0;
 int limitechannel = 0;
 int limitechannelforincriment = 0;
 
+int abaaba = 0;
+
+
 bool Server::_signal = false;
 
 Server::Server() {}
 
 Server::~Server() {}
 
-// void Server::setPassword(const std::string& password) {
-//     _password = password;
-// }
 
 std::string Server::getPassowrd() const {
     return _password;
@@ -222,6 +222,8 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
     // Channel already exists, just add the user to it
         it->second.addClient(nickname, fd);
         std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
+        std::string operators1 = channels[channelName].getOperatorNickname(abaaba);
+
         std::string creationTimeMessage = constructJoinedTimeMessage(channelName);
 
 
@@ -237,7 +239,7 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
 
         for (size_t i = 0; i < clients.size(); ++i) {
             const std::string& user = clients[i];
-            if (user == operators) {
+            if (user == operators || user == operators1) {
                 namesMessage += "@" + user;
             } else {
                 namesMessage += user;
@@ -654,7 +656,7 @@ void Server::handleClientData(int fd)
 
             } 
             
-           else if (startsWith(command, "JOIN ")) {
+           else if (startsWith(command, "JOIN ") || startsWith(command, "join ")) {
                 std::string nick;
                 for (size_t i = 0; i < _clients.size(); ++i) {
                     if (_clients[i].getFd() == fd) {
@@ -666,6 +668,13 @@ void Server::handleClientData(int fd)
                 // std::string channelName = command.substr(6);
                 std::istringstream iss(command.substr(5));
                 iss >> channelName ;
+                if (channelName[0] != '#')
+                {
+                    std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    return;
+                    
+                }
                 channelName = channelName.substr(1);
                 channelName = trim(channelName);
                 std::getline(iss, pass);
@@ -743,7 +752,7 @@ void Server::handleClientData(int fd)
                 }
 
             } 
-            else if (startsWith(command, "PRIVMSG ")) 
+            else if (startsWith(command, "PRIVMSG ") || startsWith(command, "privmsg ")) 
             {
                     std::istringstream iss(command);
                     std::string cmd, recipient, message;
@@ -777,7 +786,7 @@ void Server::handleClientData(int fd)
             }
 
 
-            else if (startsWith(command, "KICK "))
+            else if (startsWith(command, "KICK ") || startsWith(command, "kick "))
             {
                 std::string channelName, userToKick, reason;
                 std::istringstream iss(command.substr(6));
@@ -813,7 +822,7 @@ void Server::handleClientData(int fd)
             }
 
 
-            else if (startsWith(command, "TOPIC "))
+            else if (startsWith(command, "TOPIC ") || startsWith(command, "topic "))
             {
                 std::string channelName, topic;
                 std::istringstream iss(command.substr(7));
@@ -839,7 +848,7 @@ void Server::handleClientData(int fd)
 
             }
 
-            else if (startsWith(command, "INVITE "))
+            else if (startsWith(command, "INVITE ") || startsWith(command, "invite "))
             {
                 std::string channelName, nickname;
                 std::istringstream iss(command.substr(7));
@@ -859,6 +868,7 @@ void Server::handleClientData(int fd)
                     send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                 }
             }
+
             else if (startsWith(command, "BOT "))
             {
                 std::string channelName, botname, start, end, guessed;
@@ -884,7 +894,7 @@ void Server::handleClientData(int fd)
                     }
                 }
             }
-            else if (startsWith(command, "MODE "))
+            else if (startsWith(command, "MODE ") || startsWith(command, "mode "))
             {
                 std::string channelName, mode , nick;
                 int limit;
@@ -902,6 +912,8 @@ void Server::handleClientData(int fd)
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
                         channels[channelName].addOperator(nick, channels[channelName].getUserFd(nick));
+                        abaaba = channels[channelName].getUserFd(nick);
+
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and set " + nick + " as operator\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
