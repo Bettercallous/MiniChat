@@ -71,6 +71,7 @@ public:
     void ejectUserfromivited(std::string nickname);
     std::string getOperatorNickname(int fd) const;
     void removeOperator(const std::string& operatorName );
+    
 
     void setPass(const std::string &Newpass)
     {
@@ -82,6 +83,7 @@ public:
         return pass;
     }
 };
+
 
 
 

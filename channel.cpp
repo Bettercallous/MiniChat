@@ -185,3 +185,5 @@ void Channel::removeOperator(const std::string& operatorName )
         }
     }
 }
+
+

@@ -527,7 +527,8 @@ int stringToInt(const std::string& str) {
 // ........AND FINISH HERE ......//////
 
 
-void Server::handleClientData(int fd) {
+void Server::handleClientData(int fd)
+{
     std::string command;
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
@@ -858,8 +859,31 @@ void Server::handleClientData(int fd) {
                     send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                 }
             }
-
-
+            else if (startsWith(command, "BOT "))
+            {
+                std::string channelName, botname, start, end, guessed;
+                std::istringstream iss(command.substr(4));
+                iss >> channelName >> botname >> start >> end >> guessed;
+                channelName = trim(channelName);
+                botname = trim(botname);
+                start = trim(start);
+                end = trim(end);
+                guessed = trim(guessed);
+                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
+                {
+                    int random = randomInRange(stringToInt(start), stringToInt(end));
+                    if (random == stringToInt(guessed))
+                    {
+                        std::string modeChangeMessage = ":server.host PRIVMSG #" + channelName + " :Congratulations " + botname + " you have guessed the number " + guessed + " correctly\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+                    }
+                    else
+                    {
+                        std::string modeChangeMessage = ":server.host PRIVMSG #" + channelName + " :Sorry " + botname + " you have guessed the number " + guessed + " incorrectly\n";
+                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+                    }
+                }
+            }
             else if (startsWith(command, "MODE "))
             {
                 std::string channelName, mode , nick;
@@ -868,7 +892,7 @@ void Server::handleClientData(int fd) {
                 iss >> channelName >> mode >> nick;
                 channelName = trim(channelName);
                 mode = trim(mode);
-                if (mode == "+l")
+                if (mode == "+l") // what is this ?
                 nick = trim(nick);
                 std::map<std::string, Channel>::iterator it = channels.find(channelName);
 
@@ -1027,6 +1051,7 @@ void Server::handleClientData(int fd) {
                     }
                 }
             }
+           
 //**************** STOOOOOOP HERE TOP G ... 
             break;
         }
@@ -1040,7 +1065,6 @@ void Server::handleClientData(int fd) {
         clientCleanup(fd);
     }
 }
-
 
 void Server::clientCleanup(int fd) {
     for (std::vector<pollfd>::iterator it = _fds.begin(); it != _fds.end(); ++it) {
@@ -1059,7 +1083,24 @@ void Server::clientCleanup(int fd) {
     }
 }
 
-void Server::closeFds() {
+int randomInRange(int min, int max) {
+  // Check for invalid range
+  if (min > max) {
+    return -1; // Or throw an exception
+  }
+
+  // Calculate range size (inclusive)
+  int range_size = max - min + 1;
+
+  // Generate random number between 0 and RAND_MAX (scaled by range size)
+  double random_double = (double)rand() / (RAND_MAX + 1.0) * range_size;
+
+  // Convert to integer and shift by minimum value
+  return (int)random_double + min;
+}
+
+void Server::closeFds()
+{
     for (size_t i = 0; i < _clients.size(); i++){
         int fd = _clients[i].getFd();
         std::cout << "Client <" << fd << "> Disconnected" << std::endl;
@@ -1068,6 +1109,5 @@ void Server::closeFds() {
 
     if (_serverSocketFd != -1)
         close(_serverSocketFd);
-
     _fds.clear();
 }

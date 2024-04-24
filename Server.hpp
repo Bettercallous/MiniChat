@@ -89,6 +89,9 @@ class Server {
         void handleClientData(int fd);
         void clientCleanup(int fd);
         void closeFds();
+      
 };
+
+int  randomInRange(int min, int max);
 
 #endif
