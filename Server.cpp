@@ -1,6 +1,5 @@
 #include "Server.hpp"
 
-int a = 0;
 int opperatorfd = 0;
 int issettop = 0;
 int isinveted = 0;
@@ -347,7 +346,7 @@ int Server::findUserFdforkickregulars(const std::string& username) {
 
 
 // brodcasting msg to all nicks in the  channel 
-void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg, int fd) {
+void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg) {
     std::map<std::string, Channel>::iterator it = channels.find(channel);
     if (it == channels.end()) {
         std::cerr << "Channel " << channel << " does not exist" << std::endl;
@@ -559,9 +558,10 @@ void Server::handleClientData(int fd)
         } else {
             command.append(buffer, bytesRead - 1);
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
+            int auth = getClientByFd(fd).getAuthentication();
 
 //******************* FROM THERE IM STARTING TOP GGG ************  .
-            if (startsWith(command, "pass") || startsWith(command, "PASS"))
+            if ((startsWith(command, "pass") || startsWith(command, "PASS")) && auth == 0)
             {
                 std::string cmd, password;
                 std::istringstream iss(command);
@@ -576,7 +576,7 @@ void Server::handleClientData(int fd)
                 else {
                     std::string confirmation = "Please Enter Your Nickname : \n";
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
-                    a = 1;
+                    getClientByFd(fd).setAuthentication(1);
                 }
             }
 
@@ -589,7 +589,7 @@ void Server::handleClientData(int fd)
                 std::cout << "ping was sent" << std::endl;
             }
 
-            else if ((startsWith(command, "nick") || startsWith(command, "NICK")) && a == 1) 
+            else if ((startsWith(command, "nick") || startsWith(command, "NICK")) && auth == 1) 
             {
                 std::string cmd, nick;
                 std::istringstream iss(command);
@@ -620,13 +620,11 @@ void Server::handleClientData(int fd)
                     }
                     std::string confirmation = "Please Enter Your Username : \n";
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
-
-                    a = 2;
-
+                    getClientByFd(fd).setAuthentication(2);
                 }
             } 
             
-            else if ((startsWith(command, "user") || startsWith(command, "USER")) && a == 2) 
+            else if ((startsWith(command, "user") || startsWith(command, "USER")) && auth == 2) 
             {
 
                 std::istringstream iss(command);
@@ -662,7 +660,6 @@ void Server::handleClientData(int fd)
                             break;
                         }
                     }
-                    a = 0;
 
                     std::string one = ":irc.l9oroch 001 " + nickname + " :Welcome to the TopG Network, " + nickname + '\n';
                     std::string two = ":irc.l9oroch 002 " + nickname + " :Your host is TopG, running version 4.5" + '\n';
@@ -789,7 +786,7 @@ void Server::handleClientData(int fd)
                                 break;
                             }
                         }
-                        broadcastMessage(recipient, niiick, message, fd);
+                        broadcastMessage(recipient, niiick, message);
                     }
                     else
                     {
@@ -947,7 +944,6 @@ void Server::handleClientData(int fd)
             else if (startsWith(command, "MODE ") || startsWith(command, "mode "))
             {
                 std::string channelName, mode , nick;
-                int limit;
                 
                 std::istringstream iss(command.substr(5));
                 iss >> channelName >> mode >> nick;
@@ -965,8 +961,6 @@ void Server::handleClientData(int fd)
 
                 // if (mode == "+l") // what is this ?
                 // nick = trim(nick);
-                std::map<std::string, Channel>::iterator it = channels.find(channelName);
-
 
                 std::cout << "this is the mode : " << mode << std::endl;
                 if (mode == "+o")
@@ -1162,6 +1156,15 @@ void Server::clientCleanup(int fd) {
             break;
         }
     }
+}
+
+Client& Server::getClientByFd(int fd) {
+    size_t i = 0;
+    for (; i < _clients.size(); ++i) {
+        if (_clients[i].getFd() == fd)
+            break;
+    }
+    return _clients[i];
 }
 
 int randomInRange(int min, int max) {

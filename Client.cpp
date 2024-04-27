@@ -1,8 +1,8 @@
 #include "Client.hpp"
 
-Client::Client() : _isRegistered(false) {}
+Client::Client() {}
 
-Client::Client(int fd) : _fd(fd) {}
+Client::Client(int fd) : _fd(fd), _authentication(0) {}
 
 Client::~Client() {}
 
@@ -41,4 +41,12 @@ std::string Client::getUser() const {
 
 void Client::setUser(const std::string& newUser) {
     user = newUser;
+}
+
+int Client::getAuthentication() const {
+    return _authentication;
+}
+
+void Client::setAuthentication(int auth) {
+    _authentication = auth;
 }

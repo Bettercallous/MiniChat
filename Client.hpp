@@ -10,7 +10,7 @@ class Client {
         std::string name;
         std::string nick;
         std::string user;
-        bool _isRegistered;
+        int _authentication;
     public:
         Client();
         Client(int fd);
@@ -30,6 +30,9 @@ class Client {
         // Getter and setter for user
         std::string getUser() const;
         void setUser(const std::string& newUser);
+        
+        int getAuthentication() const;
+        void setAuthentication(int auth);
 
 };
 

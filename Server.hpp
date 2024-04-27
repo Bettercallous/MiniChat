@@ -64,7 +64,7 @@ class Server {
         void createChannel(const std::string& channel, const std::string& nickname, int fd);
         void handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message);
         void handleInvitation(int senderFd, const std::string& recipient, std::string channelName);
-        void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg, int fd);
+        void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg);
         void smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason);
         void smallbroadcastMessageforjoin(std::string nicknamesender , const std::string& channelname);
         void smallbroadcastMessageforTopic(std::string nicknamesender, const std::string& channelname, std::string topic);
@@ -89,7 +89,8 @@ class Server {
         void handleClientData(int fd);
         void clientCleanup(int fd);
         void closeFds();
-      
+
+        Client& getClientByFd(int fd);
 };
 
 int randomInRange(int min, int max);
