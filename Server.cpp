@@ -770,7 +770,7 @@ void Server::handleClientData(int fd)
                     std::getline(iss, message);
                     if (iss.fail())
                     {
-                        std::string errorMessage = "Error: You Just missing an argument\n";
+                        std::string errorMessage = "Error: You Just missing an argument(5)\n";
                         send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                         return;
                     }
@@ -801,9 +801,16 @@ void Server::handleClientData(int fd)
             else if (startsWith(command, "KICK ") || startsWith(command, "kick "))
             {
                 std::string channelName, userToKick, reason;
-                std::istringstream iss(command.substr(6));
-                iss >> channelName >> userToKick;
+                std::istringstream iss(command.substr(5));
+                iss >> channelName >> userToKick;  
+                if (iss.fail())
+                {
+                    std::string errorMessage = "Error: You Just missing an argument(4)\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    return;
+                }
                 std::getline(iss, reason);
+                channelName = channelName.substr(1);
                 channelName = trim(channelName);
                 userToKick = trim(userToKick);
                 reason = trim(reason);
@@ -837,9 +844,16 @@ void Server::handleClientData(int fd)
             else if (startsWith(command, "TOPIC ") || startsWith(command, "topic "))
             {
                 std::string channelName, topic;
-                std::istringstream iss(command.substr(7));
+                std::istringstream iss(command.substr(6));
                 iss >> channelName;
                 std::getline(iss, topic);
+                if (iss.fail())
+                {
+                    std::string errorMessage = "Error: You Just missing an argument(3)\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    return;
+                }
+                channelName = channelName.substr(1);
                 channelName = trim(channelName);
                 topic = trim(topic);
                 topic = topic.substr(1);
@@ -865,6 +879,12 @@ void Server::handleClientData(int fd)
                 std::string channelName, nickname;
                 std::istringstream iss(command.substr(7));
                 iss >> nickname >> channelName;
+                if (iss.fail())
+                {
+                    std::string errorMessage = "Error: You Just missing an argument(2)\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    return;
+                }
                 channelName = trim(channelName);
                 nickname = trim(nickname);
                 channelName = channelName.substr(1);
@@ -922,8 +942,12 @@ void Server::handleClientData(int fd)
             {
                 std::string channelName, mode , nick;
                 int limit;
-                std::istringstream iss(command.substr(6));
+                std::istringstream iss(command.substr(5));
                 iss >> channelName >> mode >> nick;
+                if (iss.fail())
+                    return;
+                // std::getline(iss, nick);
+                channelName = channelName.substr(1);
                 channelName = trim(channelName);
                 mode = trim(mode);
                 // if (mode == "+l") // what is this ?
@@ -1030,7 +1054,7 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "-k")
                 {
-                    std::string ChanPass = (mode.substr(2));
+                    // std::string ChanPass = (mode.substr(2));
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
                     {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " -k by " + channels[channelName].getNickname(fd) + "\n";
