@@ -906,6 +906,12 @@ void Server::handleClientData(int fd)
                 std::string start, end, guessed;
                 std::istringstream iss(command.substr(4));
                 iss >> start >> end >> guessed;
+                if (iss.fail())
+                {
+                    std::string errorMessage = "Error: You Just missing arguments(2)\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    return;
+                }
                 start = trim(start);
                 end = trim(end);
                 guessed = trim(guessed);
