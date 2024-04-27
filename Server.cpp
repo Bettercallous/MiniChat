@@ -1,4 +1,5 @@
 #include "Server.hpp"
+
 int a = 0;
 int opperatorfd = 0;
 int issettop = 0;
@@ -243,7 +244,8 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
         const std::vector<std::string>& clients = channels[channelName].getClients();
 
 
-        for (size_t i = 0; i < clients.size(); ++i) {
+        for (size_t i = 0; i < clients.size(); ++i)
+        {
             const std::string& user = clients[i];
             if (user == operators || user == operators1) {
                 namesMessage += "@" + user;
@@ -766,6 +768,12 @@ void Server::handleClientData(int fd)
                     iss >> cmd >> recipient;
                     recipient = trim(recipient);
                     std::getline(iss, message);
+                    if (iss.fail())
+                    {
+                        std::string errorMessage = "Error: You Just missing an argument\n";
+                        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                        return;
+                    }
                     message = trim(message);
                     message = message.substr(1);
                     if (recipient[0] == '#')
@@ -918,8 +926,8 @@ void Server::handleClientData(int fd)
                 iss >> channelName >> mode >> nick;
                 channelName = trim(channelName);
                 mode = trim(mode);
-                if (mode == "+l") // what is this ?
-                nick = trim(nick);
+                // if (mode == "+l") // what is this ?
+                // nick = trim(nick);
                 std::map<std::string, Channel>::iterator it = channels.find(channelName);
 
 
@@ -1039,7 +1047,6 @@ void Server::handleClientData(int fd)
                 else if (mode == "+k")
                 {
                     nick = trim(nick);
-                    std::cout << "HI IM TRIMMED PASS " << nick << std::endl;
                     channels[channelName].setPass(nick);
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
                     {
@@ -1059,7 +1066,6 @@ void Server::handleClientData(int fd)
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
                     {
                         int limit = stringToInt(nick);
-                        std::cout << "this is the limite when he limited piiiiiwwww : " << limit << std::endl;
                         channels[channelName].setlimitchannel(limit);
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " +l by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
@@ -1088,8 +1094,8 @@ void Server::handleClientData(int fd)
                         send(fd, errorMessage.c_str(), errorMessage.size(), 0);
                     }
                 }
-            }
-           
+            }   
+   
 //**************** STOOOOOOP HERE TOP G ... 
             break;
         }
