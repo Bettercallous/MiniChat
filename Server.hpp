@@ -84,7 +84,7 @@ class Server {
 
         void createServerSocket();
         void bindServerSocket();
-        void addPollfd(int fd, short events, short revents);
+        void addPollfd(int fd);
         void handleClientConnection();
         void handleClientData(int fd);
         void clientCleanup(int fd);

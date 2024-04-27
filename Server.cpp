@@ -37,7 +37,7 @@ void Server::parseArgs(int ac, char **av) {
         throw std::runtime_error("Error: Invalid arguments");
 
     long _port = atol(av[1]);
-    if (!(_port >= 1 && _port <= 65535))
+    if (!(_port >= 0 && _port <= 65535))
         throw std::runtime_error("Error: Invalid arguments");
 
     if (pwd.empty())
@@ -96,7 +96,7 @@ void Server::createServerSocket() {
     if (listen(_serverSocketFd, SOMAXCONN) == -1)
         throw std::runtime_error("Error: listen() failed");
 
-    addPollfd(_serverSocketFd, POLLIN, 0);
+    addPollfd(_serverSocketFd);
 }
 
 void Server::bindServerSocket() {
@@ -109,11 +109,11 @@ void Server::bindServerSocket() {
     }
 }
 
-void Server::addPollfd(int fd, short events, short revents) {
+void Server::addPollfd(int fd) {
     struct pollfd newPollfd;
     newPollfd.fd = fd;
-    newPollfd.events = events;
-    newPollfd.revents = revents;
+    newPollfd.events = POLLIN;
+    newPollfd.revents = 0;
     _fds.push_back(newPollfd);
 }
 
@@ -145,8 +145,8 @@ std::string art =
         send(newFd, art.c_str(), art.length(), 0);
     
         send(newFd, passwordRequest.c_str(), passwordRequest.length(), 0);
-        addPollfd(newFd, POLLIN, 0);
-        _clients.push_back(Client(newFd, inet_ntoa((client_addr.sin_addr))));
+        addPollfd(newFd);
+        _clients.push_back(Client(newFd));
         
         std::cout << "Client <" << newFd << "> Connected" << std::endl;
 }

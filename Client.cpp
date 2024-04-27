@@ -2,12 +2,11 @@
 
 Client::Client() : _isRegistered(false) {}
 
-Client::Client(int fd, std::string addr) : _fd(fd), _addr(addr) {}
+Client::Client(int fd) : _fd(fd) {}
 
 Client::~Client() {}
 
 int Client::getFd() const {return _fd;}
-
 
 void Client::setPassword(const std::string& password) {
     pass = password;

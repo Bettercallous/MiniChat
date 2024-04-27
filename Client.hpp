@@ -10,11 +10,10 @@ class Client {
         std::string name;
         std::string nick;
         std::string user;
-        std::string _addr;
         bool _isRegistered;
     public:
         Client();
-        Client(int fd, std::string addr);
+        Client(int fd);
         ~Client();
 
         int getFd() const;
