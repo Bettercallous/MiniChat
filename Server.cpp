@@ -645,7 +645,7 @@ void Server::handleClientData(int fd)
                 }
                 if (dontputthesameusername(username) == true)
                 {
-                    std::string confirmation = "Please Use a Different Nickname : \n";
+                    std::string confirmation = "Please Use a Different username : \n";
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
                 }
                 else
@@ -942,14 +942,21 @@ void Server::handleClientData(int fd)
             {
                 std::string channelName, mode , nick;
                 int limit;
+                
                 std::istringstream iss(command.substr(5));
                 iss >> channelName >> mode >> nick;
-                if (iss.fail())
+                if (channelName[0] != '#')
+                {
+                    std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                     return;
+                    
+                }
                 // std::getline(iss, nick);
                 channelName = channelName.substr(1);
                 channelName = trim(channelName);
                 mode = trim(mode);
+
                 // if (mode == "+l") // what is this ?
                 // nick = trim(nick);
                 std::map<std::string, Channel>::iterator it = channels.find(channelName);
@@ -979,7 +986,7 @@ void Server::handleClientData(int fd)
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
                     {
                         channels[channelName].removeOperator(nick);
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and set " + nick + " as operator\n";
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and unset " + nick + " as operator\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                     }
@@ -1106,7 +1113,7 @@ void Server::handleClientData(int fd)
                 {
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
                     {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +l by " + channels[channelName].getNickname(fd) + "\n";
+                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " -l by " + channels[channelName].getNickname(fd) + "\n";
                         send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
                         smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
                         limitechannel = 0;
