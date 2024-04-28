@@ -560,7 +560,8 @@ void Server::handleClientData(int fd)
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
             int auth = getClientByFd(fd).getAuthentication();
 
-//******************* FROM THERE IM STARTING TOP GGG ************  .
+//******************* FROM THERE IM STARTING TOP GGG ************
+
             if ((startsWith(command, "pass") || startsWith(command, "PASS")) && auth == 0)
             {
                 std::string cmd, password;
@@ -579,7 +580,34 @@ void Server::handleClientData(int fd)
                     getClientByFd(fd).setAuthentication(1);
                 }
             }
+            else if (startsWith(command, "QUIT"))
+            {
+                // Iterate over channels
+                std::map<std::string, Channel>::iterator it;
+                for (it = channels.begin(); it != channels.end(); ++it)
+                {
+                    Channel& channel = it->second;
 
+                    std::string nickname = channel.getNickname(fd);
+                    // Check if the user is part of the channel
+                    if (channel.isUserInChannel(nickname))
+                    {
+                        // Mark the user as disconnected in the channel
+                        channel.ejectUserfromusers(fd);
+                    }
+                }
+                std::map<int, std::string>::iterator userIt;
+                userIt = usernames.find(fd);
+                if (userIt != usernames.end()) {
+                    usernames.erase(userIt);
+                }
+                std::map<int, std::string>::iterator nickIt;
+                userIt = nicknames.find(fd);
+                if (userIt != nicknames.end()) {
+                    nicknames.erase(userIt);
+                }
+                clientCleanup(fd);
+            }
             else if (startsWith(command, "PING"))
             {
                 std::istringstream iss(command);

@@ -32,6 +32,7 @@ private:
     int opperatorfd;
     bool issettop;
     bool isinveted;
+    bool channelconnect;
 
 public:
 
@@ -62,6 +63,7 @@ public:
     void addClientinveted(const std::string& client, int fd);
     void addOperator(const std::string& operatorName, int fd);
     int getUserFd(const std::string& username) const;
+    bool isUserInChannel(const std::string& nickname) const;
     std::vector<std::string> getClients() const;
     std::string getNickname(int fd) const;
     bool isOperator(int fd);

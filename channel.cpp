@@ -80,6 +80,17 @@ int Channel::getUserFd(const std::string& username) const {
     return -1; // Return -1 if username not found
 }
 
+
+bool Channel::isUserInChannel(const std::string& nickname) const {
+    // Search for the nickname in the userMap
+    std::map<std::string, int>::const_iterator it = userFdMap.find(nickname);
+    // If the nickname is found and the user is connected, return true
+    if (it != userFdMap.end() && it->second) {
+        return true;
+    }
+    // Otherwise, return false
+    return false;
+}
     // Get all clients' usernames in the channel
 std::vector<std::string> Channel::getClients() const {
     std::vector<std::string> clients;
