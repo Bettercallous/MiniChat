@@ -39,10 +39,7 @@ class Server {
         std::vector<Client> _clients;
         // THAT'S THA DATA OF TOOOP GGG START FROM THERE .
         std::map<int, std::string> nicknames; // Replace unordered_map with map
-        std::map<int, std::string> usernamesoperators; // Replace unordered_map with map
-
         std::map<int, std::string> usernames; // Replace unordered_map with map
-        std::map<int, std::string> usernamesregulars;
         // std::map<std::string, std::vector<std::string> > channels; //here a chanel name and list of client in every chanel 
         std::map<std::string, Channel> channels;
 

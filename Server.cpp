@@ -334,16 +334,6 @@ bool Server::dontputthesameusername(const std::string& username) {
     return false; 
 }
 
-int Server::findUserFdforkickregulars(const std::string& username) {
-    std::map<int, std::string>::iterator it;
-    for (it = usernamesregulars.begin(); it != usernamesregulars.end(); ++it) {
-        if (it->second == username) {
-            return it->first;
-        }
-    }
-    return -1;
-}
-
 
 // brodcasting msg to all nicks in the  channel 
 void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg) {
@@ -517,15 +507,6 @@ void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& c
     }
 }
 
-
-void Server::kickUser(int fd) {
-    close(fd);
-    std::map<int, std::string>::iterator it = usernamesregulars.find(fd);
-    if (it != usernamesregulars.end()) {
-        usernamesregulars.erase(it);
-    }
-}
-
 int stringToInt(const std::string& str) {
     std::stringstream ss(str);
     int result;
@@ -562,14 +543,28 @@ void Server::handleClientData(int fd)
 
 //******************* FROM THERE IM STARTING TOP GGG ************
 
-            if ((startsWith(command, "pass") || startsWith(command, "PASS")) && auth == 0)
+            if ((startsWith(command, "pass ") || startsWith(command, "PASS ")) && auth == 0)
             {
-                std::string cmd, password;
-                std::istringstream iss(command);
-                iss >> cmd >> password;
-                password = trim(password); // Remove leading/trailing whitespace
+                std::string passwordLine = command.substr(command.find(" ") + 1);
+                 passwordLine = trim(passwordLine);
+
+                 // Check if the password starts and ends with a quote
+                 if (!passwordLine.empty() && ((passwordLine[0] == '"' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '"') ||
+                                               (passwordLine[0] == '\'' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '\'')))
+                 {
+                     // Remove the quotes
+                     passwordLine = passwordLine.substr(1, passwordLine.size() - 2);
+                 }
+
+                 // Validate the password
+                 if (passwordLine.empty())
+                {
+                     std::string errorMessage = "Error: Password cannot be empty\n";
+                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                     return;
+                }
                 std::string  passwordoftheserver = getPassowrd();
-                if (passwordoftheserver != password)
+                if (passwordoftheserver != passwordLine)
                 {
                     std::string errorMessage = "Error: Incorrect Password\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
@@ -617,19 +612,24 @@ void Server::handleClientData(int fd)
                 std::cout << "ping was sent" << std::endl;
             }
 
-            else if ((startsWith(command, "nick") || startsWith(command, "NICK")) && auth == 1) 
+            else if ((startsWith(command, "nick ") || startsWith(command, "NICK ")) && auth == 1) 
             {
                 std::string cmd, nick;
                 std::istringstream iss(command);
                 iss >> cmd >> nick;
                 nick = trim(nick);
-                if (iss.fail())
+
+                // Check if there are more tokens after the nickname
+                std::string remaining;
+                if (iss >> remaining)
                 {
-                    std::string errorMessage = "Error: Command requires 1 parameters\n";
+                    std::string errorMessage = "Error: Command requires only 1 parameter\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                     return;
                 }
-                if (dontputthesamenick(nick) == true)
+
+                // Validate the nickname
+                if (dontputthesamenick(nick))
                 {
                     std::string confirmation = "Please Use a Different Nickname : \n";
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
@@ -642,7 +642,7 @@ void Server::handleClientData(int fd)
                         if (_clients[i].getFd() == fd)
                         {
                             _clients[i].setNick(nick);
-                            std::cout << "Password set for client " << fd << ": " << nick << std::endl;
+                            std::cout << "Nickname set for client " << fd << ": " << nick << std::endl;
                             break;
                         }
                     }
@@ -650,8 +650,8 @@ void Server::handleClientData(int fd)
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
                     getClientByFd(fd).setAuthentication(2);
                 }
-            } 
-            
+            }
+
             else if ((startsWith(command, "user") || startsWith(command, "USER")) && auth == 2) 
             {
 
@@ -663,7 +663,8 @@ void Server::handleClientData(int fd)
                 dontworry1 = trim(dontworry1);
                 realname = trim(realname);
 
-                if (iss.fail())
+                std::string reme;
+                if (iss.fail() || iss >> reme)
                 {
                     std::string errorMessage = "Error: Command requires at least four parameters\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
