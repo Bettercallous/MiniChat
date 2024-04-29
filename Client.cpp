@@ -16,7 +16,6 @@ std::string Client::getPassowrd() const {
     return pass;
 }
 
-// Implementation of getter and setter functions for name
 std::string Client::getName() const {
     return name;
 }
@@ -25,7 +24,6 @@ void Client::setName(const std::string& newName) {
     name = newName;
 }
 
-// Implementation of getter and setter functions for nick
 std::string Client::getNick() const {
     return nick;
 }
@@ -34,7 +32,6 @@ void Client::setNick(const std::string& newNick) {
     nick = newNick;
 }
 
-// Implementation of getter and setter functions for user
 std::string Client::getUser() const {
     return user;
 }
@@ -49,4 +46,16 @@ int Client::getAuthentication() const {
 
 void Client::setAuthentication(int auth) {
     _authentication = auth;
+}
+
+void Client::appendToCommand(std::string toAppend) {
+    command += toAppend;
+}
+
+const std::string& Client::getCommand() const {
+    return command;
+}
+
+void Client::clearCommand() {
+    command.clear();
 }

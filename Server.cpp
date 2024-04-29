@@ -224,7 +224,7 @@ void Server::createChannel(const std::string& channelName, const std::string& ni
             
         }
 
-    // Channel already exists, just add the user to it
+        // Channel already exists, just add the user to it
         it->second.addClient(nickname, fd);
         std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
         std::string operators1 = channels[channelName].getOperatorNickname(abaaba);
@@ -518,12 +518,11 @@ int stringToInt(const std::string& str) {
 
 void Server::handleClientData(int fd)
 {
-    std::string command;
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
-    ssize_t bytesRead;
-    while ((bytesRead = recv(fd, buffer, BUFFER_SIZE - 1, 0)) > 0) {
+    ssize_t bytesRead = recv(fd, buffer, BUFFER_SIZE - 1, 0);
+    if (bytesRead > 0) {
         bool foundEof = false;
         for (ssize_t i = 0; i < bytesRead; ++i) {
             if (buffer[i] == '\n') {
@@ -534,9 +533,12 @@ void Server::handleClientData(int fd)
 
         if (!foundEof) {
             buffer[bytesRead] = '\0';
-            command += buffer;
+            getClientByFd(fd).appendToCommand(buffer);
+            return;
         } else {
-            command.append(buffer, bytesRead - 1);
+            buffer[bytesRead] = '\0';
+            getClientByFd(fd).appendToCommand(buffer);
+            std::string command = getClientByFd(fd).getCommand();
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
             int auth = getClientByFd(fd).getAuthentication();
 
@@ -1140,10 +1142,9 @@ void Server::handleClientData(int fd)
                     }
                 }
             }   
-   
 //**************** STOOOOOOP HERE TOP G ... 
-            break;
         }
+        getClientByFd(fd).clearCommand();
     }
 
     if (bytesRead == 0) {

@@ -10,6 +10,7 @@ class Client {
         std::string name;
         std::string nick;
         std::string user;
+        std::string command;
         int _authentication;
     public:
         Client();
@@ -18,22 +19,25 @@ class Client {
 
         int getFd() const;
         std::string getPassowrd() const;
-        void setPassword(const std::string& password); // Function to set the password
-     // Getter and setter for name
+        void setPassword(const std::string& password);
+
         std::string getName() const;
         void setName(const std::string& newName);
 
-        // Getter and setter for nick
         std::string getNick() const;
         void setNick(const std::string& newNick);
 
-        // Getter and setter for user
         std::string getUser() const;
         void setUser(const std::string& newUser);
         
         int getAuthentication() const;
         void setAuthentication(int auth);
+        
+        void appendToCommand(std::string toAppend);
 
+        const std::string& getCommand() const;
+
+        void clearCommand();
 };
 
 #endif

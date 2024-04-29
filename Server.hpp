@@ -38,9 +38,9 @@ class Server {
         std::vector<struct pollfd> _fds;
         std::vector<Client> _clients;
         // THAT'S THA DATA OF TOOOP GGG START FROM THERE .
-        std::map<int, std::string> nicknames; // Replace unordered_map with map
-        std::map<int, std::string> usernames; // Replace unordered_map with map
-        // std::map<std::string, std::vector<std::string> > channels; //here a chanel name and list of client in every chanel 
+        std::map<int, std::string> nicknames;
+        std::map<int, std::string> usernames;
+
         std::map<std::string, Channel> channels;
 
         
