@@ -32,12 +32,12 @@ class Client {
         
         int getAuthentication() const;
         void setAuthentication(int auth);
-        
-        void appendToCommand(std::string toAppend);
 
         const std::string& getCommand() const;
 
         void clearCommand();
+
+        void appendCommand(std::string str);
 };
 
 #endif

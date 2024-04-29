@@ -48,14 +48,15 @@ void Client::setAuthentication(int auth) {
     _authentication = auth;
 }
 
-void Client::appendToCommand(std::string toAppend) {
-    command += toAppend;
-}
 
 const std::string& Client::getCommand() const {
     return command;
 }
 
 void Client::clearCommand() {
-    command.clear();
+    command = "";
+}
+
+void Client::appendCommand(std::string str) {
+    this->command += str;
 }

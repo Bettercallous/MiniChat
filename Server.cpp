@@ -518,27 +518,21 @@ int stringToInt(const std::string& str) {
 
 void Server::handleClientData(int fd)
 {
+    Client& client = getClientByFd(fd); 
+
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
     ssize_t bytesRead = recv(fd, buffer, BUFFER_SIZE - 1, 0);
     if (bytesRead > 0) {
-        bool foundEof = false;
-        for (ssize_t i = 0; i < bytesRead; ++i) {
-            if (buffer[i] == '\n') {
-                foundEof = true;
-                break;
-            }
-        }
+        buffer[bytesRead] = '\0';
 
-        if (!foundEof) {
-            buffer[bytesRead] = '\0';
-            getClientByFd(fd).appendToCommand(buffer);
-            return;
-        } else {
-            buffer[bytesRead] = '\0';
-            getClientByFd(fd).appendToCommand(buffer);
-            std::string command = getClientByFd(fd).getCommand();
+        client.appendCommand(buffer);
+
+        size_t newlinePos = client.getCommand().find("\n");
+        if (newlinePos != std::string::npos) {
+            // Extract the complete message up to the newline character
+            std::string command = client.getCommand().substr(0, newlinePos);
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
             int auth = getClientByFd(fd).getAuthentication();
 
@@ -1143,8 +1137,8 @@ void Server::handleClientData(int fd)
                 }
             }   
 //**************** STOOOOOOP HERE TOP G ... 
+            client.clearCommand();
         }
-        getClientByFd(fd).clearCommand();
     }
 
     if (bytesRead == 0) {
