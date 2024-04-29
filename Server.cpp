@@ -153,7 +153,6 @@ std::string art =
 
 // FUNCTIONS OF TOP GGGGGG.. START FROM HEEEREEE 
 
-//triiiiiiiiiiiimmmmmm
 std::string trim(const std::string& str) {
     size_t first = str.find_first_not_of(" \t\n\r");
     if (std::string::npos == first) {
@@ -606,7 +605,7 @@ void Server::handleClientData(int fd)
             else if (startsWith(command, "PING"))
             {
                 std::istringstream iss(command);
-                std::string serverHostname = command.substr(5); // Skip the "PING " prefix
+                std::string serverHostname = command.substr(5);
                 std::string pongMessage = "PONG " + serverHostname + "\r\n";
                 send(fd, pongMessage.c_str(), pongMessage.length(), 0);
                 std::cout << "ping was sent" << std::endl;
@@ -928,27 +927,19 @@ void Server::handleClientData(int fd)
 
             else if (startsWith(command, "BOT ") || startsWith(command, "bot "))
             {
-                std::cout << "HHHDFGFGD " << std::endl;
                 std::string start, end, guessed;
                 std::istringstream iss(command.substr(4));
                 iss >> start >> end >> guessed;
-                if (iss.fail())
+                std::string reme;
+                if (iss.fail() || iss >> reme)
                 {
-                    std::string errorMessage = "Error: You Just missing arguments(2)\n";
+                    std::string errorMessage = "Error: Command take 3 parameters\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                     return;
                 }
                 start = trim(start);
                 end = trim(end);
                 guessed = trim(guessed);
-                // std::string channelName, botname, start, end, guessed;
-                // std::istringstream iss(command.substr(4));
-                // iss >> channelName >> botname >> start >> end >> guessed;
-                // channelName = trim(channelName);
-                // botname = trim(botname);
-                // start = trim(start);
-                // end = trim(end);
-                // guessed = trim(guessed);
                 if (stringToInt(start) < stringToInt(end) && stringToInt(guessed) >= stringToInt(start) && stringToInt(guessed) <= stringToInt(end))
                 {
                     int r = randomInRange(stringToInt(start), stringToInt(end));
@@ -977,20 +968,15 @@ void Server::handleClientData(int fd)
                 std::istringstream iss(command.substr(5));
                 iss >> channelName >> mode >> nick;
                 if (channelName[0] != '#')
-                {
+                { 
                     std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
                     return;
                     
                 }
-                // std::getline(iss, nick);
                 channelName = channelName.substr(1);
                 channelName = trim(channelName);
                 mode = trim(mode);
-
-                // if (mode == "+l") // what is this ?
-                // nick = trim(nick);
-
                 std::cout << "this is the mode : " << mode << std::endl;
                 if (mode == "+o")
                 {
@@ -1090,7 +1076,6 @@ void Server::handleClientData(int fd)
                 }
                 else if (mode == "-k")
                 {
-                    // std::string ChanPass = (mode.substr(2));
                     if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
                     {
                         std::string modeChangeMessage = ":server.host MODE #" + channelName + " -k by " + channels[channelName].getNickname(fd) + "\n";
