@@ -556,7 +556,7 @@ void Server::handleClientData(int fd)
                  }
 
                  // Validate the password
-                 if (passwordLine.empty())
+                if (passwordLine.empty())
                 {
                      std::string errorMessage = "Error: Password cannot be empty\n";
                      send(fd, errorMessage.c_str(), errorMessage.length(), 0);
@@ -977,12 +977,9 @@ void Server::handleClientData(int fd)
                 std::istringstream iss(command.substr(5));
                 iss >> channelName >> mode >> nick;
                 if (channelName[0] != '#')
-                { 
-                    std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                {
                     client.clearCommand();
                     return;
-                    
                 }
                 channelName = channelName.substr(1);
                 channelName = trim(channelName);
