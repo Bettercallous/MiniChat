@@ -123,6 +123,10 @@ void Server::handleClientConnection() {
     if (newFd == -1) {
         throw std::runtime_error("Error: accept() failed");
     }
+
+    if (fcntl(newFd, F_SETFL, O_NONBLOCK) == -1)
+        throw std::runtime_error("Error: fcntl() failed");
+
     std::string passwordRequest = "Please Enter The password Of This Server :\n";
 
 
@@ -531,11 +535,10 @@ void Server::handleClientData(int fd)
 
         size_t newlinePos = client.getCommand().find_first_of("\r\n");
         if (newlinePos != std::string::npos) {
-            // Extract the complete message up to the newline character
             std::string command = client.getCommand().substr(0, newlinePos);
             client.setCommand(command);
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
-            int auth = getClientByFd(fd).getAuthentication();
+            int auth = client.getAuthentication();
 
 //******************* FROM THERE IM STARTING TOP GGG ************
 
@@ -569,10 +572,10 @@ void Server::handleClientData(int fd)
                 else {
                     std::string confirmation = "Please Enter Your Nickname : \n";
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
-                    getClientByFd(fd).setAuthentication(1);
+                    client.setAuthentication(1);
                 }
             }
-            else if (startsWith(command, "QUIT"))
+            else if (startsWith(command, "QUIT "))
             {
                 // Iterate over channels
                 std::map<std::string, Channel>::iterator it;
@@ -646,7 +649,7 @@ void Server::handleClientData(int fd)
                     }
                     std::string confirmation = "Please Enter Your Username : \n";
                     send(fd, confirmation.c_str(), confirmation.length(), 0);
-                    getClientByFd(fd).setAuthentication(2);
+                    client.setAuthentication(2);
                 }
             }
 
@@ -1148,7 +1151,6 @@ void Server::handleClientData(int fd)
                 }
             }   
 //**************** STOOOOOOP HERE TOP G ...
-            // command.clear();
             client.clearCommand();
         }
     }
