@@ -1149,8 +1149,8 @@ void Server::handleClientData(int fd)
             }   
 //**************** STOOOOOOP HERE TOP G ...
             // command.clear();
+            client.clearCommand();
         }
-        client.clearCommand();
     }
 
     else if (bytesRead == 0) {
