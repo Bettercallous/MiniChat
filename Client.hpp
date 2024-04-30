@@ -38,6 +38,7 @@ class Client {
         void clearCommand();
 
         void appendCommand(std::string str);
+        void setCommand(std::string cmd);
 };
 
 #endif

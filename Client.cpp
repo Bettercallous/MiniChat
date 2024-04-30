@@ -54,9 +54,14 @@ const std::string& Client::getCommand() const {
 }
 
 void Client::clearCommand() {
+    command.clear();
     command = "";
 }
 
 void Client::appendCommand(std::string str) {
-    this->command += str;
+    command += str;
+}
+
+void Client::setCommand(std::string cmd) {
+    command = cmd;
 }

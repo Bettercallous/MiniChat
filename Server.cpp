@@ -529,10 +529,11 @@ void Server::handleClientData(int fd)
 
         client.appendCommand(buffer);
 
-        size_t newlinePos = client.getCommand().find("\n");
+        size_t newlinePos = client.getCommand().find_first_of("\r\n");
         if (newlinePos != std::string::npos) {
             // Extract the complete message up to the newline character
             std::string command = client.getCommand().substr(0, newlinePos);
+            client.setCommand(command);
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
             int auth = getClientByFd(fd).getAuthentication();
 
@@ -556,6 +557,7 @@ void Server::handleClientData(int fd)
                 {
                      std::string errorMessage = "Error: Password cannot be empty\n";
                      send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                     client.clearCommand();
                      return;
                 }
                 std::string  passwordoftheserver = getPassowrd();
@@ -620,6 +622,7 @@ void Server::handleClientData(int fd)
                 {
                     std::string errorMessage = "Error: Command requires only 1 parameter\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                 }
 
@@ -663,6 +666,7 @@ void Server::handleClientData(int fd)
                 {
                     std::string errorMessage = "Error: Command requires at least four parameters\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                 }
                 if (dontputthesameusername(username) == true)
@@ -713,6 +717,7 @@ void Server::handleClientData(int fd)
                 {
                     std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                     
                 }
@@ -793,6 +798,7 @@ void Server::handleClientData(int fd)
                     {
                         std::string errorMessage = "Error: You Just missing an argument(5)\n";
                         send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                        client.clearCommand();
                         return;
                     }
                     message = trim(message);
@@ -828,6 +834,7 @@ void Server::handleClientData(int fd)
                 {
                     std::string errorMessage = "Error: You Just missing an argument(4)\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                 }
                 std::getline(iss, reason);
@@ -872,6 +879,7 @@ void Server::handleClientData(int fd)
                 {
                     std::string errorMessage = "Error: You Just missing an argument(3)\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                 }
                 channelName = channelName.substr(1);
@@ -904,6 +912,7 @@ void Server::handleClientData(int fd)
                 {
                     std::string errorMessage = "Error: You Just missing an argument(2)\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                 }
                 channelName = trim(channelName);
@@ -931,6 +940,7 @@ void Server::handleClientData(int fd)
                 {
                     std::string errorMessage = "Error: Command take 3 parameters\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                 }
                 start = trim(start);
@@ -967,6 +977,7 @@ void Server::handleClientData(int fd)
                 { 
                     std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                    client.clearCommand();
                     return;
                     
                 }
@@ -1136,12 +1147,13 @@ void Server::handleClientData(int fd)
                     }
                 }
             }   
-//**************** STOOOOOOP HERE TOP G ... 
-            client.clearCommand();
+//**************** STOOOOOOP HERE TOP G ...
+            // command.clear();
         }
+        client.clearCommand();
     }
 
-    if (bytesRead == 0) {
+    else if (bytesRead == 0) {
         std::cout << "Client <" << fd << "> Disconnected" << std::endl;
         clientCleanup(fd);
     } else if (bytesRead == -1) {
