@@ -570,54 +570,9 @@ void Server::handleClientData(int fd)
                     client.setAuthentication(1);
                 }
             }
-            else if (startsWith(command, "QUIT "))
+            else if (startsWith(command, "QUIT"))
             {
-                // Iterate over channels
-                std::map<std::string, Channel>::iterator it;
-                for (it = channels.begin(); it != channels.end(); ++it)
-                {
-                    Channel& channel = it->second;
-
-                    std::string nickname = channel.getNickname(fd);
-                    // Check if the user is part of the channel
-                    if (channel.isUserInChannel(nickname))
-                    {
-                        // Mark the user as disconnected in the channel
-                        channel.ejectUserfromusers(fd);
-                    }
-                }
-                std::map<int, std::string>::iterator userIt;
-                userIt = usernames.find(fd);
-                if (userIt != usernames.end()) {
-                    usernames.erase(userIt);
-                }
-                std::map<int, std::string>::iterator nickIt;
-                nickIt = nicknames.find(fd);
-                if (nickIt != nicknames.end()) {
-                    nicknames.erase(nickIt);
-                }
-                
-                for (std::map<std::string, Channel>::iterator it = channels.begin(); it != channels.end(); ++it) {
-                    std::map<std::string, int> &usersfdmap = it->second.getUserFdMap();
-                    for (std::map<std::string, int>::iterator it3 = usersfdmap.begin(); it3 != usersfdmap.end(); ++it3) {
-                        if (it3->second == fd)
-                            usersfdmap.erase(it3);
-                    }
-                }
-                for (std::map<std::string, Channel>::iterator it1 = channels.begin(); it1 != channels.end(); ++it1) {
-                    std::map<std::string, int> &invitedusrmap = it1->second.invitedUserss();
-                    for (std::map<std::string, int>::iterator it3 = invitedusrmap.begin(); it3 != invitedusrmap.end(); ++it3) {
-                        if (it3->second == fd)
-                            invitedusrmap.erase(it3);
-                    }
-                }
-                for (std::map<std::string, Channel>::iterator it2 = channels.begin(); it2 != channels.end(); ++it2) {
-                    std::map<std::string, int> &operatorsmap = it2->second.getOperators();
-                    for (std::map<std::string, int>::iterator it3 = operatorsmap.begin(); it3 != operatorsmap.end(); ++it3) {
-                        if (it3->second == fd)
-                            operatorsmap.erase(it3);
-                    }
-                }
+                cleanChannel(fd);
                 clientCleanup(fd);
             }
             else if (startsWith(command, "PING"))
@@ -1170,9 +1125,11 @@ void Server::handleClientData(int fd)
 
     else if (bytesRead == 0) {
         std::cout << "Client <" << fd << "> Disconnected" << std::endl;
+        cleanChannel(fd);
         clientCleanup(fd);
     } else if (bytesRead == -1) {
         std::cerr << "Error reading data from client <" << fd << ">" << std::endl;
+        cleanChannel(fd);
         clientCleanup(fd);
     }
 }
@@ -1226,4 +1183,51 @@ void Server::closeFds()
     if (_serverSocketFd != -1)
         close(_serverSocketFd);
     _fds.clear();
+}
+
+void Server::cleanChannel(int fd) {
+    std::map<std::string, Channel>::iterator it;
+    for (it = channels.begin(); it != channels.end(); ++it)
+    {
+        Channel& channel = it->second;
+        std::string nickname = channel.getNickname(fd);
+        // Check if the user is part of the channel
+        if (channel.isUserInChannel(nickname))
+        {
+            // Mark the user as disconnected in the channel
+            channel.ejectUserfromusers(fd);
+        }
+    }
+    std::map<int, std::string>::iterator userIt;
+    userIt = usernames.find(fd);
+    if (userIt != usernames.end()) {
+        usernames.erase(userIt);
+    }
+    std::map<int, std::string>::iterator nickIt;
+    nickIt = nicknames.find(fd);
+    if (nickIt != nicknames.end()) {
+        nicknames.erase(nickIt);
+    }
+    
+    for (std::map<std::string, Channel>::iterator it = channels.begin(); it != channels.end(); ++it) {
+        std::map<std::string, int> &usersfdmap = it->second.getUserFdMap();
+        for (std::map<std::string, int>::iterator it3 = usersfdmap.begin(); it3 != usersfdmap.end(); ++it3) {
+            if (it3->second == fd)
+                usersfdmap.erase(it3);
+        }
+    }
+    for (std::map<std::string, Channel>::iterator it1 = channels.begin(); it1 != channels.end(); ++it1) {
+        std::map<std::string, int> &invitedusrmap = it1->second.invitedUserss();
+        for (std::map<std::string, int>::iterator it3 = invitedusrmap.begin(); it3 != invitedusrmap.end(); ++it3) {
+            if (it3->second == fd)
+                invitedusrmap.erase(it3);
+        }
+    }
+    for (std::map<std::string, Channel>::iterator it2 = channels.begin(); it2 != channels.end(); ++it2) {
+        std::map<std::string, int> &operatorsmap = it2->second.getOperators();
+        for (std::map<std::string, int>::iterator it3 = operatorsmap.begin(); it3 != operatorsmap.end(); ++it3) {
+            if (it3->second == fd)
+                operatorsmap.erase(it3);
+        }
+    }
 }

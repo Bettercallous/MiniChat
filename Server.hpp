@@ -75,9 +75,11 @@ class Server {
         void handleClientConnection();
         void handleClientData(int fd);
         void clientCleanup(int fd);
+        void cleanChannel(int fd);
         void closeFds();
 
         Client& getClientByFd(int fd);
+
 };
 
 int randomInRange(int min, int max);
