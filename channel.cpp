@@ -3,20 +3,10 @@
 
 Channel::Channel(){}
 
-Channel::Channel(const std::string& name) : Channelname(name), opperatorfd(false), issettop(false), isinveted(false) {}
+Channel::Channel(const std::string& name) : Channelname(name) {}
 
 Channel::~Channel() {}
 
-
-void Channel::setoperator(int value)
-{
-    opperatorfd = value;
-}
-
-int Channel::getoperator()
-{
-    return opperatorfd;
-}
 
 void Channel::setlimitchannel(int value)
 {
@@ -28,31 +18,11 @@ int Channel::getlimitechannel()
     return limite;
 }
 
-void Channel::setbooltopic(bool value)
-{
-    issettop = value;
-}
-
-bool Channel::getbooltopic()
-{
-    return issettop;
-}
-
-void Channel::setboolinvited(bool value)
-{
-    isinveted = value;
-}
-
-bool Channel::getboolinvited()
-{
-    return isinveted;
-}
 
 void Channel::setTopic(const std::string& newTopic) {
     topic = newTopic;
 }
 
-    // Get topic function
 std::string Channel::getTopic() const {
     return topic;
 
@@ -66,9 +36,7 @@ void Channel::addClientinveted(const std::string& client, int fd) {
     invitedUsers[client] = fd;
 }
 
-    // Add an operator to the channel
 void Channel::addOperator(const std::string& operatorName, int fd) {
-// Store the operator name and file descriptor in the map
 operators[operatorName] = fd;
 }
 
@@ -77,21 +45,18 @@ int Channel::getUserFd(const std::string& username) const {
     if (it != userFdMap.end()) {
         return it->second;
     }
-    return -1; // Return -1 if username not found
+    return -1; 
 }
 
 
 bool Channel::isUserInChannel(const std::string& nickname) const {
-    // Search for the nickname in the userMap
     std::map<std::string, int>::const_iterator it = userFdMap.find(nickname);
-    // If the nickname is found and the user is connected, return true
     if (it != userFdMap.end() && it->second) {
         return true;
     }
-    // Otherwise, return false
     return false;
 }
-    // Get all clients' usernames in the channel
+
 std::vector<std::string> Channel::getClients() const {
     std::vector<std::string> clients;
     std::map<std::string, int>::const_iterator it;
@@ -105,71 +70,63 @@ std::string Channel::getNickname(int fd) const {
     std::map<std::string, int>::const_iterator it;
     for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
     if (it->second == fd) {
-        return it->first; // Return the nickname if the file descriptor matches
+        return it->first;
+        }
     }
-    }
-    return ""; // Return an empty string if the file descriptor is not found
+    return ""; 
 }
 
 
 bool Channel::isOperator(int fd) {
-// Iterate through the map of operators
+
 for (std::map<std::string, int>::iterator it = operators.begin(); it != operators.end(); ++it) {
-    // Check if the file descriptor matches
     if (it->second == fd) {
-        return true; // Found the file descriptor in the map
+        return true; 
     }
 }
-return false; // File descriptor not found in the map
+return false; 
 }
 
 bool Channel::isInvited(std::string nickname) {
-// Iterate through the map of operators
 for (std::map<std::string, int>::iterator it = invitedUsers.begin(); it != invitedUsers.end(); ++it) {
-    // Check if the file descriptor matches
     if (it->first == nickname) {
-        return true; // Found the file descriptor in the map
+        return true;
     }
 }
-return false; // File descriptor not found in the map
+return false;
 }
 
     
 
 int Channel::findUserFdForKickRegulars(const std::string& username) {
-// Iterate through the userFdMap to find the user
 std::map<std::string, int>::iterator it;
 for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
     if (it->first == username) {
-        return it->second; // Return the file descriptor if the username matches
+        return it->second;
     }
 }
-return -1; // Return -1 if the user is not found
+return -1;
 }
 
 
 void Channel::ejectUserfromusers(int fd) {
-   // Iterate over the map to find the user with the given file descriptor
    std::map<std::string, int>::iterator it;
    for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
        if (it->second == fd) {
-           // Erase the user from the map
            userFdMap.erase(it);
            std::cout << "the user earased " << std::endl;
-           return; // Exit the function after removing the user
+           return; 
        }
    }
 }
 
 void Channel::ejectUserfromivited(std::string nickname) {
-   // Iterate over the map to find the user with the given file descriptor
    std::map<std::string, int>::iterator it;
    for (it = invitedUsers.begin(); it != invitedUsers.end(); ++it) {
        if (it->first == nickname) {
-           // Erase the user from the map
            invitedUsers.erase(it);
            std::cout << "the user earased " << std::endl;
-           return; // Exit the function after removing the user
+           return;
        }
    }
 }
@@ -181,20 +138,39 @@ std::string Channel::getOperatorNickname(int fd) const {
             return it->first;
         }
     }
-    return ""; // Return empty string if operator not found
+    return "";
 }
 
 void Channel::removeOperator(const std::string& operatorName )
 {
-    // Iterate through the map to find the operator
     std::map<std::string, int>::iterator it;
     for (it = operators.begin(); it != operators.end(); ++it) {
         if (it->first == operatorName) {
-            // Erase the operator from the map
             operators.erase(it);
-            return; // Exit the function after removing the operator
+            return; 
         }
     }
 }
 
+std::map<std::string, int>& Channel::getUserFdMap() {
+    return userFdMap;
+}
 
+std::map<std::string, int>& Channel::invitedUserss() {
+    return invitedUsers;
+}
+
+std::map<std::string, int>& Channel::getOperators() {
+    return operators;
+}
+
+
+void Channel::setPass(const std::string &Newpass)
+{
+    pass = Newpass;
+}
+
+std::string Channel::getPass()
+{
+    return pass;
+}

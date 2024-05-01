@@ -26,12 +26,9 @@ private:
     std::string key;
     std::string pass;
     int limite;
-    std::map<std::string, int> userFdMap; // Mapping of usernames to file descriptors
+    std::map<std::string, int> userFdMap; 
     std::map<std::string, int> invitedUsers;
     std::map<std::string, int>  operators;
-    int opperatorfd;
-    bool issettop;
-    bool isinveted;
     bool channelconnect;
 
 public:
@@ -41,22 +38,8 @@ public:
     ~Channel();
     void setTopic(const std::string& newTopic);
     std::string getTopic() const;
-
-    //checks
-    void setoperator(int value);
-    int getoperator();
-
-    //check 
     void setlimitchannel(int value);
     int getlimitechannel();
-
-    //checks
-    void setbooltopic(bool value);
-    bool getbooltopic();
-
-    //checks
-    void setboolinvited(bool value);
-    bool getboolinvited();
 
 
     void addClient(const std::string& client, int fd);
@@ -75,15 +58,12 @@ public:
     void removeOperator(const std::string& operatorName );
     
 
-    void setPass(const std::string &Newpass)
-    {
-        pass = Newpass;
-    }
+    void setPass(const std::string &Newpass);
 
-    std::string getPass()
-    {
-        return pass;
-    }
+    std::string getPass();
+    std::map<std::string, int>& getUserFdMap();
+    std::map<std::string, int>& invitedUserss();
+    std::map<std::string, int>& getOperators();
 };
 
 

@@ -4,8 +4,8 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
-#include <unistd.h> // Include for the send function
-#include <cstring> // Include for the strlen function
+#include <unistd.h>
+#include <cstring>
 #include <iostream>
 #include <cstdlib>
 #include <csignal>
@@ -37,10 +37,8 @@ class Server {
         std::string _password;
         std::vector<struct pollfd> _fds;
         std::vector<Client> _clients;
-        // THAT'S THA DATA OF TOOOP GGG START FROM THERE .
         std::map<int, std::string> nicknames;
         std::map<int, std::string> usernames;
-
         std::map<std::string, Channel> channels;
 
         
@@ -48,11 +46,8 @@ class Server {
     public:
         Server();
         ~Server();
-        // THAT'S MY FUNCTIONS START FROM THERE
         void setNickname(int fd, const std::string& nickname);
         std::string getPassowrd() const;
-        void setPassword(const std::string& password); 
-        void setUsernameoperators(int fd, const std::string& username);
         void setUsernames(int fd, const std::string& username);
         std::string formatCreationTime();
         std::string constructCreationTimeMessage(const std::string& channelName);
@@ -67,13 +62,8 @@ class Server {
         void smallbroadcastMessageforTopic(std::string nicknamesender, const std::string& channelname, std::string topic);
         void smallbroadcastMOOD(std::string nicknamesender, const std::string& channelname, std::string mode, std::string receiver);
         int findUserFd1(const std::string& username);
-        std::string findUsernameforsending(int fd);
-        bool isOperator(int fd);
-        void kickUser(int fd);
-        int findUserFdforkickregulars(const std::string& username);
         bool dontputthesamenick(const std::string& nickname);
         bool dontputthesameusername(const std::string& username);
-        // AND END HERE.
         void parseArgs(int ac, char **av);
         static void receiveSignal(int signum);
         void init();

@@ -540,22 +540,17 @@ void Server::handleClientData(int fd)
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
             int auth = client.getAuthentication();
 
-//******************* FROM THERE IM STARTING TOP GGG ************
-
             if ((startsWith(command, "pass ") || startsWith(command, "PASS ")) && auth == 0)
             {
                 std::string passwordLine = command.substr(command.find(" ") + 1);
                  passwordLine = trim(passwordLine);
 
-                 // Check if the password starts and ends with a quote
                  if (!passwordLine.empty() && ((passwordLine[0] == '"' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '"') ||
                                                (passwordLine[0] == '\'' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '\'')))
                  {
-                     // Remove the quotes
                      passwordLine = passwordLine.substr(1, passwordLine.size() - 2);
                  }
 
-                 // Validate the password
                 if (passwordLine.empty())
                 {
                      std::string errorMessage = "Error: Password cannot be empty\n";
@@ -597,9 +592,31 @@ void Server::handleClientData(int fd)
                     usernames.erase(userIt);
                 }
                 std::map<int, std::string>::iterator nickIt;
-                userIt = nicknames.find(fd);
-                if (userIt != nicknames.end()) {
-                    nicknames.erase(userIt);
+                nickIt = nicknames.find(fd);
+                if (nickIt != nicknames.end()) {
+                    nicknames.erase(nickIt);
+                }
+                
+                for (std::map<std::string, Channel>::iterator it = channels.begin(); it != channels.end(); ++it) {
+                    std::map<std::string, int> &usersfdmap = it->second.getUserFdMap();
+                    for (std::map<std::string, int>::iterator it3 = usersfdmap.begin(); it3 != usersfdmap.end(); ++it3) {
+                        if (it3->second == fd)
+                            usersfdmap.erase(it3);
+                    }
+                }
+                for (std::map<std::string, Channel>::iterator it1 = channels.begin(); it1 != channels.end(); ++it1) {
+                    std::map<std::string, int> &invitedusrmap = it1->second.invitedUserss();
+                    for (std::map<std::string, int>::iterator it3 = invitedusrmap.begin(); it3 != invitedusrmap.end(); ++it3) {
+                        if (it3->second == fd)
+                            invitedusrmap.erase(it3);
+                    }
+                }
+                for (std::map<std::string, Channel>::iterator it2 = channels.begin(); it2 != channels.end(); ++it2) {
+                    std::map<std::string, int> &operatorsmap = it2->second.getOperators();
+                    for (std::map<std::string, int>::iterator it3 = operatorsmap.begin(); it3 != operatorsmap.end(); ++it3) {
+                        if (it3->second == fd)
+                            operatorsmap.erase(it3);
+                    }
                 }
                 clientCleanup(fd);
             }
@@ -1147,7 +1164,6 @@ void Server::handleClientData(int fd)
                     }
                 }
             }   
-//**************** STOOOOOOP HERE TOP G ...
             client.clearCommand();
         }
     }
@@ -1188,18 +1204,14 @@ Client& Server::getClientByFd(int fd) {
 }
 
 int randomInRange(int min, int max) {
-  // Check for invalid range
   if (min > max) {
-    return -1; // Or throw an exception
+    return -1; 
   }
 
-  // Calculate range size (inclusive)
   int range_size = max - min + 1;
 
-  // Generate random number between 0 and RAND_MAX (scaled by range size)
   double random_double = (double)rand() / (RAND_MAX + 1.0) * range_size;
 
-  // Convert to integer and shift by minimum value
   return (int)random_double + min;
 }
 
