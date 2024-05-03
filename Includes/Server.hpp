@@ -20,6 +20,7 @@
 #include <ctime>
 #include <ctime>
 #include <iomanip>
+#include "Macros.hpp"
 
 class Server {
     private:
@@ -53,13 +54,19 @@ class Server {
         void handleInvitation(int senderFd, const std::string& recipient, std::string channelName);
         
         void broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg);
-        void smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason);
+        void smallBroadcastMsgForKick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason);
         void smallbroadcastMessageforjoin(std::string nicknamesender , const std::string& channelname);
         void smallbroadcastMessageforTopic(std::string nicknamesender, const std::string& channelname, std::string topic);
         void smallbroadcastMOOD(std::string nicknamesender, const std::string& channelname, std::string mode, std::string receiver);
         int findUserFd1(const std::string& username);
         bool dontputthesamenick(const std::string& nickname);
         bool dontputthesameusername(const std::string& username);
+        std::string intToString(int number);
+        std::string trim(const std::string& str);
+        bool startsWith(const std::string& str, const std::string& prefix);
+        int stringToInt(const std::string& str);
+        bool isValidPassword(const std::string& passwordLine);
+        int randomInRange(int min, int max);
 
         // Server
         void init();
@@ -102,8 +109,5 @@ class Server {
         void handleChannelKey(std::string& nick, const std::string& channelName, const std::string& mode, int fd);
         void handleChannelLimit(const std::string& nick, const std::string& channelName, const std::string& mode, int fd);
 };
-
-int randomInRange(int min, int max);
-std::string intToString(int number);
 
 #endif

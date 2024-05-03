@@ -1,4 +1,5 @@
 #include "Channel.hpp"
+#include "Server.hpp"
 
 Channel::Channel(){}
 
@@ -133,4 +134,45 @@ void Channel::removeOperator(const std::string& operatorName )
             return; 
         }
     }
+}
+
+void Server::createChannel(const std::string& channelName, const std::string& nickname, int fd) {
+    // Check if the channel already exists
+    std::map<std::string, Channel>::iterator it = channels.find(channelName);
+    if (it == channels.end()) {
+        isinvited = 0;
+        // Channel doesn't exist, so create it and add the user
+        addUserToChannel(nickname, channelName, fd);
+    }
+    else {
+        if (channels[channelName].findUserFdForKickRegulars(nickname) == -1 && channelLimit == 1) {
+            limitchannelforincrement = limitchannelforincrement + 1;
+        }
+        // Channel already exists, just add the user to it
+        it->second.addClient(nickname, fd);
+        // Send JOIN message to the client
+        sendJoinMsg(nickname, channelName, fd);
+    }
+}
+
+void Server::addUserToChannel(const std::string& nickname, const std::string& channelName, int fd) {
+    Channel newChannel(channelName);
+    newChannel.addClient(nickname, fd);
+    newChannel.addOperator(nickname, fd);
+    opperatorfd = fd;
+
+    std::string creationTimeMessage = constructCreationTimeMessage(channelName);
+    std::string joinMessage = JOIN_MESSAGE(nickname, channelName);
+    std::string modeMessage = MODE_MESSAGE(channelName);
+    std::string namesMessage = NAMES_MESSAGE(nickname, channelName);
+    std::string endOfNamesMessage = END_OF_NAMES_MESSAGE(nickname, channelName);
+    std::string channelMessage = CHANNEL_MESSAGE(channelName, creationTimeMessage);
+    
+    send(fd, joinMessage.c_str(), joinMessage.length(), 0);
+    send(fd, modeMessage.c_str(), modeMessage.length(), 0);
+    send(fd, namesMessage.c_str(), namesMessage.length(), 0);
+    send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+    send(fd, channelMessage.c_str(), channelMessage.length(), 0);
+
+    channels.insert(std::make_pair(channelName, newChannel));
 }
