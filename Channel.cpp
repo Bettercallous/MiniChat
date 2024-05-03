@@ -1,5 +1,4 @@
-#include "channel.hpp"
-
+#include "Channel.hpp"
 
 Channel::Channel(){}
 
@@ -7,38 +6,29 @@ Channel::Channel(const std::string& name) : Channelname(name) {}
 
 Channel::~Channel() {}
 
+void Channel::setlimitchannel(int value) {limit = value;}
 
-void Channel::setlimitchannel(int value)
-{
-    limite = value;
-}
+int Channel::getChannelLimit() {return limit;}
 
-int Channel::getlimitechannel()
-{
-    return limite;
-}
+void Channel::setTopic(const std::string& newTopic) {topic = newTopic;}
 
+std::string Channel::getTopic() const {return topic;}
 
-void Channel::setTopic(const std::string& newTopic) {
-    topic = newTopic;
-}
+void Channel::addClient(const std::string& client, int fd) {userFdMap[client] = fd;}
 
-std::string Channel::getTopic() const {
-    return topic;
+void Channel::addClientinveted(const std::string& client, int fd) {invitedUsers[client] = fd;}
 
-}
+void Channel::addOperator(const std::string& operatorName, int fd) {operators[operatorName] = fd;}
 
-void Channel::addClient(const std::string& client, int fd) {
-    userFdMap[client] = fd;
-}
+std::map<std::string, int>& Channel::getUserFdMap() {return userFdMap;}
 
-void Channel::addClientinveted(const std::string& client, int fd) {
-    invitedUsers[client] = fd;
-}
+std::map<std::string, int>& Channel::invitedUserss() {return invitedUsers;}
 
-void Channel::addOperator(const std::string& operatorName, int fd) {
-operators[operatorName] = fd;
-}
+std::map<std::string, int>& Channel::getOperators() {return operators;}
+
+void Channel::setPass(const std::string &Newpass) {pass = Newpass;}
+
+std::string Channel::getPass() {return pass;}
 
 int Channel::getUserFd(const std::string& username) const {
     std::map<std::string, int>::const_iterator it = userFdMap.find(username);
@@ -47,7 +37,6 @@ int Channel::getUserFd(const std::string& username) const {
     }
     return -1; 
 }
-
 
 bool Channel::isUserInChannel(const std::string& nickname) const {
     std::map<std::string, int>::const_iterator it = userFdMap.find(nickname);
@@ -78,43 +67,38 @@ std::string Channel::getNickname(int fd) const {
 
 
 bool Channel::isOperator(int fd) {
-
-for (std::map<std::string, int>::iterator it = operators.begin(); it != operators.end(); ++it) {
-    if (it->second == fd) {
-        return true; 
+    for (std::map<std::string, int>::iterator it = operators.begin(); it != operators.end(); ++it) {
+        if (it->second == fd) {
+            return true; 
+        }
     }
-}
-return false; 
+    return false; 
 }
 
 bool Channel::isInvited(std::string nickname) {
-for (std::map<std::string, int>::iterator it = invitedUsers.begin(); it != invitedUsers.end(); ++it) {
-    if (it->first == nickname) {
-        return true;
+    for (std::map<std::string, int>::iterator it = invitedUsers.begin(); it != invitedUsers.end(); ++it) {
+        if (it->first == nickname) {
+            return true;
+        }
     }
+    return false;
 }
-return false;
-}
-
-    
 
 int Channel::findUserFdForKickRegulars(const std::string& username) {
-std::map<std::string, int>::iterator it;
-for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
-    if (it->first == username) {
-        return it->second;
+    std::map<std::string, int>::iterator it;
+    for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
+        if (it->first == username) {
+            return it->second;
+        }
     }
+    return -1;
 }
-return -1;
-}
-
 
 void Channel::ejectUserfromusers(int fd) {
    std::map<std::string, int>::iterator it;
    for (it = userFdMap.begin(); it != userFdMap.end(); ++it) {
        if (it->second == fd) {
            userFdMap.erase(it);
-           std::cout << "the user earased " << std::endl;
            return; 
        }
    }
@@ -125,7 +109,6 @@ void Channel::ejectUserfromivited(std::string nickname) {
    for (it = invitedUsers.begin(); it != invitedUsers.end(); ++it) {
        if (it->first == nickname) {
            invitedUsers.erase(it);
-           std::cout << "the user earased " << std::endl;
            return;
        }
    }
@@ -150,27 +133,4 @@ void Channel::removeOperator(const std::string& operatorName )
             return; 
         }
     }
-}
-
-std::map<std::string, int>& Channel::getUserFdMap() {
-    return userFdMap;
-}
-
-std::map<std::string, int>& Channel::invitedUserss() {
-    return invitedUsers;
-}
-
-std::map<std::string, int>& Channel::getOperators() {
-    return operators;
-}
-
-
-void Channel::setPass(const std::string &Newpass)
-{
-    pass = Newpass;
-}
-
-std::string Channel::getPass()
-{
-    return pass;
 }

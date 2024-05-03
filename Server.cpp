@@ -1,21 +1,19 @@
 #include "Server.hpp"
+#include "Macros.hpp"
 
 int opperatorfd = 0;
 int issettop = 0;
-int isinveted = 0;
+int isinvited = 0;
 int itHasPass = 0;
-int limitechannel = 0;
-int limitechannelforincriment = 0;
-
+int channelLimit = 0;
+int limitchannelforincrement = 0;
 int abaaba = 0;
-
 
 bool Server::_signal = false;
 
 Server::Server() {}
 
 Server::~Server() {}
-
 
 std::string Server::getPassowrd() const {
     return _password;
@@ -120,42 +118,22 @@ void Server::handleClientConnection() {
     struct sockaddr_in client_addr;
     socklen_t clientAddrSize = sizeof(sockaddr_in);
     int newFd = accept(_serverSocketFd, (struct sockaddr *)&client_addr, &clientAddrSize);
-    if (newFd == -1) {
+    if (newFd == -1)
         throw std::runtime_error("Error: accept() failed");
-    }
 
     if (fcntl(newFd, F_SETFL, O_NONBLOCK) == -1)
         throw std::runtime_error("Error: fcntl() failed");
 
     std::string passwordRequest = "Please Enter The password Of This Server :\n";
+    std::string art = MINICHAT;
 
-
-
-std::string art =
-    " ________                    ______      \n"
-    "/        |                  /      \\     \n"
-    "$$$$$$$/______    ______  /$$$$$$  |       \n"
-    "   $$ | /      \\  /      \\ $$ | _$$/     \n"
-    "   $$ |/$$$$$$  |/$$$$$$  |$$ |/    |      \n"
-    "   $$ |$$ |  $$ |$$ |  $$ |$$ |$$$$ |       \n"
-    "   $$ |$$ \\__$$ |$$ |__$$ |$$ \\__$$ |    \n"
-    "   $$ |$$    $$/ $$    $$/ $$    $$/    \n"
-    "   $$/  $$$$$$/  $$$$$$$/   $$$$$$/  \n"
-    "                 $$ |                     \n"
-    "                 $$ |                     \n"
-    "                 $$/                      \n";
-
-        send(newFd, art.c_str(), art.length(), 0);
-    
-        send(newFd, passwordRequest.c_str(), passwordRequest.length(), 0);
-        addPollfd(newFd);
-        _clients.push_back(Client(newFd));
+    send(newFd, art.c_str(), art.length(), 0);
+    send(newFd, passwordRequest.c_str(), passwordRequest.length(), 0);
+    addPollfd(newFd);
+    _clients.push_back(Client(newFd));
         
-        std::cout << "Client <" << newFd << "> Connected" << std::endl;
+    std::cout << "Client <" << newFd << "> Connected" << std::endl;
 }
-
-
-// FUNCTIONS OF TOP GGGGGG.. START FROM HEEEREEE 
 
 std::string trim(const std::string& str) {
     size_t first = str.find_first_not_of(" \t\n\r");
@@ -163,7 +141,6 @@ std::string trim(const std::string& str) {
         return "";
     }
     size_t last = str.find_last_not_of(" \t\n\r");
-
     return str.substr(first, last - first + 1);
 }
 
@@ -176,120 +153,110 @@ std::string Server::formatCreationTime() {
     return std::string(buffer);
 }
 
-
 std::string Server::constructCreationTimeMessage(const std::string& channelName) {
     std::stringstream ss;
     ss << "Channel #" << channelName << " created " << formatCreationTime();
     return ss.str();
 }
+
 std::string Server::constructJoinedTimeMessage(const std::string& channelName) {
     std::stringstream ss;
     ss << "Channel #" << channelName << " Joined " << formatCreationTime();
     return ss.str();
 }
 
-
-// here i create the channel and add the nicks of the users with some checks
 void Server::createChannel(const std::string& channelName, const std::string& nickname, int fd) {
     // Check if the channel already exists
     std::map<std::string, Channel>::iterator it = channels.find(channelName);
     if (it == channels.end()) {
-        isinveted = 0;
-        
+        isinvited = 0;
         // Channel doesn't exist, so create it and add the user
-        Channel newChannel(channelName);
-        newChannel.addClient(nickname, fd);
-        newChannel.addOperator(nickname, fd);
-        opperatorfd = fd;
-        std::string creationTimeMessage = constructCreationTimeMessage(channelName);
-
-        std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
-        send(fd, joinMessage.c_str(), joinMessage.length(), 0);
-        std::string modeMessage = ":irc.TopG MODE #" + channelName + " +nt\n";
-        send(fd, modeMessage.c_str(), modeMessage.length(), 0);
-        std::string namesMessage = ":irc.TopG 353 " + nickname + " = #" + channelName + " :@" + nickname + "\n";
-        send(fd, namesMessage.c_str(), namesMessage.length(), 0);
-        std::string endOfNamesMessage = ":irc.TopG 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
-        send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
-        std::string channelMessage = ":irc.TopG 354 " + channelName + " " + creationTimeMessage + "\n";
-        send(fd, channelMessage.c_str(), channelMessage.length(), 0);
-
-        // Insert the new channel into the map
-        channels.insert(std::make_pair(channelName, newChannel));
-
+        addUserToChannel(nickname, channelName, fd);
     }
-
-    else
-    {
-        if (channels[channelName].findUserFdForKickRegulars(nickname) == -1 && limitechannel == 1)
-        {
-            std::cout << "here we incriment the limite for check again : " << limitechannelforincriment << std::endl;
-            limitechannelforincriment = limitechannelforincriment + 1;
-            
+    else {
+        if (channels[channelName].findUserFdForKickRegulars(nickname) == -1 && channelLimit == 1) {
+            limitchannelforincrement = limitchannelforincrement + 1;
         }
-
         // Channel already exists, just add the user to it
         it->second.addClient(nickname, fd);
-        std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
-        std::string operators1 = channels[channelName].getOperatorNickname(abaaba);
-
-        std::string creationTimeMessage = constructJoinedTimeMessage(channelName);
-
-
         // Send JOIN message to the client
-        std::string joinMessage = ":" + nickname + " JOIN #" + channelName + "\n";
-        send(fd, joinMessage.c_str(), joinMessage.length(), 0);
-        std::cout << "this is the topi and he good :  "<< channels[channelName].getTopic()  << std::endl;
-        std::string topicMessage = ":irc.TopG 332 " + nickname + " #" + channelName + " :" + channels[channelName].getTopic() + " https://irc.com\n";
-        send(fd, topicMessage.c_str(), topicMessage.length(), 0);
-        std::string namesMessage = ":irc.TopG 353 " + nickname + " @ #" + channelName + " :";
-        const std::vector<std::string>& clients = channels[channelName].getClients();
-
-
-        for (size_t i = 0; i < clients.size(); ++i)
-        {
-            const std::string& user = clients[i];
-            if (user == operators || user == operators1) {
-                namesMessage += "@" + user;
-            } else {
-                namesMessage += user;
-            }
-
-            if (i < clients.size() - 1) {
-                namesMessage += " ";
-            }
-        }
-        namesMessage += "\n";
-        send(fd, namesMessage.c_str(), namesMessage.length(), 0);
-        std::string endOfNamesMessage = ":irc.example.com 366 " + nickname + " #" + channelName + " :End of /NAMES list.\n";
-        send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
-        std::string channelMessage = ":irc.example.com 354 " + channelName + " " + creationTimeMessage + "\n";
-        send(fd, channelMessage.c_str(), channelMessage.length(), 0);
-
-        smallbroadcastMessageforjoin(nickname, channelName);
+        sendJoinMsg(nickname, channelName, fd);
     }
+}
+
+void Server::addUserToChannel(const std::string& nickname, const std::string& channelName, int fd) {
+    Channel newChannel(channelName);
+    newChannel.addClient(nickname, fd);
+    newChannel.addOperator(nickname, fd);
+    opperatorfd = fd;
+
+    std::string creationTimeMessage = constructCreationTimeMessage(channelName);
+    std::string joinMessage = JOIN_MESSAGE(nickname, channelName);
+    std::string modeMessage = MODE_MESSAGE(channelName);
+    std::string namesMessage = NAMES_MESSAGE(nickname, channelName);
+    std::string endOfNamesMessage = END_OF_NAMES_MESSAGE(nickname, channelName);
+    std::string channelMessage = CHANNEL_MESSAGE(channelName, creationTimeMessage);
+    
+    send(fd, joinMessage.c_str(), joinMessage.length(), 0);
+    send(fd, modeMessage.c_str(), modeMessage.length(), 0);
+    send(fd, namesMessage.c_str(), namesMessage.length(), 0);
+    send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+    send(fd, channelMessage.c_str(), channelMessage.length(), 0);
+
+    channels.insert(std::make_pair(channelName, newChannel));
+}
+
+void Server::sendJoinMsg(const std::string& nickname, const std::string& channelName, int fd) {
+    std::string operators = channels[channelName].getOperatorNickname(opperatorfd);
+    std::string operators1 = channels[channelName].getOperatorNickname(abaaba);
+
+    std::string topic = channels[channelName].getTopic();
+    std::string creationTimeMessage = constructJoinedTimeMessage(channelName);
+    std::string joinMessage = JOIN_MESSAGE(nickname, channelName);
+    std::string topicMessage = TOPIC_MESSAGE(nickname, channelName, topic);
+
+    send(fd, joinMessage.c_str(), joinMessage.length(), 0);
+    send(fd, topicMessage.c_str(), topicMessage.length(), 0);
+
+    std::string namesMessage = NAMES_MESSAGE2(nickname, channelName);
+    const std::vector<std::string>& clients = channels[channelName].getClients();
+    for (size_t i = 0; i < clients.size(); ++i) {
+        const std::string& user = clients[i];
+        if (user == operators || user == operators1) {
+            namesMessage += "@" + user;
+        } else {
+            namesMessage += user;
+        }
+        if (i < clients.size() - 1)
+            namesMessage += " ";
+    }
+    namesMessage += "\n";
+    std::string endOfNamesMessage = END_OF_NAMES_MESSAGE(nickname, channelName);
+    std::string channelMessage = CHANNEL_MESSAGE(channelName, creationTimeMessage);
+
+    send(fd, namesMessage.c_str(), namesMessage.length(), 0);
+    send(fd, endOfNamesMessage.c_str(), endOfNamesMessage.length(), 0);
+    send(fd, channelMessage.c_str(), channelMessage.length(), 0);
+
+    smallbroadcastMessageforjoin(nickname, channelName);
 }
 
 bool startsWith(const std::string& str, const std::string& prefix) {
     return str.substr(0, prefix.length()) == prefix;
 }
 
-void Server::setNickname(int fd, const std::string& nickname) {
-        nicknames[fd] = nickname;
-    }
+void Server::setNickname(int fd, const std::string& nickname) {nicknames[fd] = nickname;}
 
-void Server::setUsernames(int fd, const std::string& username) {
-        usernames[fd] = username; 
-    }
+void Server::setUsernames(int fd, const std::string& username) {usernames[fd] = username;}
 
-//handling privet msg between users only 
+// handling private msg between users only 
 void Server::handlePrivateMessage(int senderFd, const std::string& recipient, const std::string& message) {
     int recipientFd = findUserFd1(recipient);
     if (recipientFd != -1) {
-        std::string privateMessage = ":" + nicknames[senderFd] + " PRIVMSG " + recipient + " :" + message + "\r\n";
+        std::string privateMessage = PRIVATE_MESSAGE(senderFd, recipient, message);
         send(recipientFd, privateMessage.c_str(), privateMessage.length(), 0);
     } else {
-        std::string errorMessage = ":server.host NOTICE " + nicknames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
+        std::string errorMessage = ERROR_MESSAGE(senderFd, recipient);
         send(senderFd, errorMessage.c_str(), errorMessage.length(), 0);
     }
 }
@@ -301,12 +268,12 @@ void Server::handleInvitation(int senderFd, const std::string& recipient, std::s
         std::string inviteMessage = ":" + nicknames[senderFd] + " INVITE " + recipient + " :#" + channelName + "\r\n";
         send(recipientFd, inviteMessage.c_str(), inviteMessage.length(), 0);
     } else {
-        std::string errorMessage = ":server.host NOTICE " + nicknames[senderFd] + " :Error: User '" + recipient + "' not found or offline\r\n";
+        std::string errorMessage = ERROR_MESSAGE(senderFd, recipient);
         send(senderFd, errorMessage.c_str(), errorMessage.length(), 0);
     }
 }
 
-//this find is for finding nickname of the users i need to brodcasting to 
+// find nicknames of the users to brodcast to 
 int Server::findUserFd1(const std::string& username) {
     std::map<int, std::string>::iterator it;
     for (it = nicknames.begin(); it != nicknames.end(); ++it) {
@@ -337,8 +304,7 @@ bool Server::dontputthesameusername(const std::string& username) {
     return false; 
 }
 
-
-// brodcasting msg to all nicks in the  channel 
+// brodcasting msg to all nicks in the channel 
 void Server::broadcastMessage(const std::string& channel, const std::string& senderNickname, const std::string& msg) {
     std::map<std::string, Channel>::iterator it = channels.find(channel);
     if (it == channels.end()) {
@@ -346,19 +312,15 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
         return;
     }
 
-    if (channels[channel].findUserFdForKickRegulars(senderNickname) == -1)
-    {
+    if (channels[channel].findUserFdForKickRegulars(senderNickname) == -1) {
         return;
     }
-    std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
 
+    std::string message = ":" + senderNickname + " PRIVMSG #" + channel + " :" + msg + "\r\n";
     const std::vector<std::string>& clients = it->second.getClients();
 
     for (size_t i = 0; i < clients.size(); ++i) {
         const std::string& client = clients[i];
-
-        std::cout << "this is the client name : "<< client <<  std::endl;
-        std::cout << "this is the nickname name : " << senderNickname << std::endl;
 
         if (client == senderNickname) {
             continue;
@@ -374,8 +336,6 @@ void Server::broadcastMessage(const std::string& channel, const std::string& sen
         }
     }
 }
-
-
 
 void Server::smallbroadcastMessagefortheckick(std::string nicknamesender , const std::string& channelname, const std::string& usertokick, const std::string& reason) {
     std::map<std::string, Channel>::iterator it = channels.find(channelname);
@@ -402,20 +362,19 @@ void Server::smallbroadcastMessagefortheckick(std::string nicknamesender , const
     }
 }
 
-void Server::smallbroadcastMessageforjoin(std::string nicknamesender , const std::string& channelname) {
-    std::map<std::string, Channel>::iterator it = channels.find(channelname);
+void Server::smallbroadcastMessageforjoin(std::string nickname , const std::string& channelName) {
+    std::map<std::string, Channel>::iterator it = channels.find(channelName);
     if (it == channels.end()) {
-        std::cerr << "Channel " << channelname << " does not exist" << std::endl;
+        std::cerr << "Channel " << channelName << " does not exist" << std::endl;
         return;
     }
-    std::string joinMessage = ":" + nicknamesender + " JOIN #" + channelname + "\n";
-
+    std::string joinMessage = JOIN_MESSAGE(nickname, channelName);
     const std::vector<std::string>& clients = it->second.getClients();
 
     for (size_t i = 0; i < clients.size(); ++i) {
         const std::string& client = clients[i];
 
-        if (client == nicknamesender) {
+        if (client == nickname) {
             continue;
         }
         int recipientFd = it->second.getUserFd(client);
@@ -436,8 +395,7 @@ void Server::smallbroadcastMessageforTopic(std::string nicknamesender, const std
     }
 
     std::string topicMessage = ":" + nicknamesender + " TOPIC #" + channelname + " :" + topic + "\n";
-
-  const std::vector<std::string>& clients = it->second.getClients();
+    const std::vector<std::string>& clients = it->second.getClients();
 
     for (size_t i = 0; i < clients.size(); ++i) {
         const std::string& client = clients[i];
@@ -454,7 +412,6 @@ void Server::smallbroadcastMessageforTopic(std::string nicknamesender, const std
     }
 }
 
-
 void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& channelname, std::string mode, std::string receiver) {
 
     std::map<std::string, Channel>::iterator it = channels.find(channelname);
@@ -468,36 +425,27 @@ void Server::smallbroadcastMOOD(std::string nicknamesender, const std::string& c
         modeChangeMessage = ":server.host MODE #" + channelname + " +t by " + nicknamesender + "\n";
     } else if(mode == "-t") {
         modeChangeMessage = ":server.host MODE #" + channelname + " -t by " + nicknamesender + "\n";
-    }
-    if (mode == "+o"){
+    } else if (mode == "+o"){
         modeChangeMessage = ":server.host MODE #" + channelname + " " + mode + " by " + nicknamesender + " and set " + receiver + " as operator\n";
-    }
-    else if (mode == "-o"){
+    } else if (mode == "-o"){
         modeChangeMessage = ":server.host MODE #" + channelname + " " + mode + " by " + nicknamesender + " and unset " + receiver + " as operator\n";
-    }
-    else if (mode == "+i"){
+    } else if (mode == "+i"){
         modeChangeMessage = ":server.host MODE #" + channelname + " +i by " + nicknamesender + "\n";
-    }
-    else if (mode == "-i"){
+    } else if (mode == "-i"){
         modeChangeMessage = ":server.host MODE #" + channelname + " -i by " + nicknamesender + "\n";
-    }
-    else if (mode == "+k"){
+    } else if (mode == "+k"){
         modeChangeMessage = ":server.host MODE #" + channelname + " +k by " + nicknamesender + "\n";
-    }
-    else if (mode == "-k"){
+    } else if (mode == "-k"){
         modeChangeMessage = ":server.host MODE #" + channelname + " -k by " + nicknamesender + "\n";
-    }
-    else if (mode == "-l"){
+    } else if (mode == "-l"){
         modeChangeMessage = ":server.host MODE #" + channelname + " -l by " + nicknamesender + "\n";
-    }
-    else if (mode == "+l"){
+    } else if (mode == "+l"){
         modeChangeMessage = ":server.host MODE #" + channelname + " +l by " + nicknamesender + "\n";
     }
 
     int senderFd = it->second.getUserFd(nicknamesender);
 
     const std::vector<std::string>& clients = it->second.getClients();
-
     for (size_t i = 0; i < clients.size(); ++i) {
         const std::string& client = clients[i];
 
@@ -517,22 +465,560 @@ int stringToInt(const std::string& str) {
     return result;
 }
 
-// ........AND FINISH HERE ......//////
+bool isValidPassword(const std::string& passwordLine) {
+    if (!passwordLine.empty() && 
+        ((passwordLine[0] == '"' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '"') ||
+         (passwordLine[0] == '\'' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '\''))) {
+        return true;
+    }
+    return false;
+}
 
+void Server::processPassword(Client& client, const std::string& command, int fd) {
+    std::string passwordLine = command.substr(command.find(" ") + 1);
+    passwordLine = trim(passwordLine);
+
+    if (isValidPassword(passwordLine)) {
+        passwordLine = passwordLine.substr(1, passwordLine.size() - 2);
+    }
+
+    if (passwordLine.empty()) {
+        std::string errorMessage = "Error: Password cannot be empty\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+
+    std::string serverPassword = getPassowrd();
+    if (serverPassword != passwordLine) {
+        std::string errorMessage = "Error: Incorrect Password\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+    } else {
+        std::string confirmation = "Please Enter Your Nickname : \n";
+        send(fd, confirmation.c_str(), confirmation.length(), 0);
+        client.setAuthentication(1);
+    }
+}
+
+void Server::ping(const std::string& command, int fd) {
+    std::istringstream iss(command);
+    std::string serverHostname = command.substr(5);
+    std::string pongMessage = "PONG " + serverHostname + "\r\n";
+    send(fd, pongMessage.c_str(), pongMessage.length(), 0);
+    std::cout << "PONG" << std::endl;
+}
+
+void Server::processNickCmd(Client& client, const std::string& command, int fd) {
+    std::string cmd, nick;
+    std::istringstream iss(command);
+    iss >> cmd >> nick;
+    nick = trim(nick);
+
+    // Check if there are more tokens after the nickname
+    std::string remaining;
+    if (iss >> remaining) {
+        std::string errorMessage = "Error: Command requires only 1 parameter\n";
+            send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+
+    // Validate the nickname
+    if (dontputthesamenick(nick)) {
+        std::string confirmation = "Please Use a Different Nickname : \n";
+        send(fd, confirmation.c_str(), confirmation.length(), 0);
+    }
+    else {
+        setNickname(fd, nick);
+        for (size_t i = 0; i < _clients.size(); ++i)
+        {
+            if (_clients[i].getFd() == fd) {
+                _clients[i].setNick(nick);
+                std::cout << "Nickname set for client " << fd << ": " << nick << std::endl;
+                break;
+            }
+        }
+        std::string confirmation = "Please Enter Your Username : \n";
+        send(fd, confirmation.c_str(), confirmation.length(), 0);
+        client.setAuthentication(2);
+    }
+}
+
+void Server::welcome(const std::string& nickname, int fd){
+    std::string one = OO1;
+    std::string two = OO2;
+    std::string tre = OO3;
+    std::string foor = OO4;
+    send(fd, one.c_str(), one.length(), 0);
+    send(fd, two.c_str(), two.length(), 0);
+    send(fd, tre.c_str(), tre.length(), 0);
+    send(fd, foor.c_str(), foor.length(), 0);
+}
+
+void Server::processUserCmd(Client& client, const std::string& command, int fd)
+{
+    std::istringstream iss(command);
+    std::string cmd, username, dontworry, dontworry1, realname, nickname;
+    iss >> cmd >> username >> dontworry >> dontworry1 >> realname;
+    username = trim(username);
+    dontworry = trim(dontworry);
+    dontworry1 = trim(dontworry1);
+    realname = trim(realname);
+
+    std::string reme;
+    if (iss.fail() || iss >> reme) {
+        std::string errorMessage = "Error: Command requires four parameters\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+
+    if (dontputthesameusername(username) == true) {
+        std::string confirmation = "Please Use a Different username : \n";
+        send(fd, confirmation.c_str(), confirmation.length(), 0);
+    }
+    else {
+        setUsernames(fd, username);
+        for (size_t i = 0; i < _clients.size(); ++i) {
+            if (_clients[i].getFd() == fd) {
+                _clients[i].setUser(username);
+                _clients[i].setName(realname);
+                nickname = _clients[i].getNick();
+                break;
+            }
+        }
+        welcome(nickname, fd);
+    }
+}
+
+void Server::processJoinCmd(Client& client, const std::string& command, int fd)
+{
+    std::string nick;
+    for (size_t i = 0; i < _clients.size(); ++i) {
+        if (_clients[i].getFd() == fd) {
+            nick = _clients[i].getNick();
+            break;
+        }
+    }
+    std::string channelName, pass ;
+    std::istringstream iss(command.substr(5));
+    iss >> channelName ;
+    if (channelName[0] != '#')
+    {
+        std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+    channelName = channelName.substr(1);
+    channelName = trim(channelName);
+    std::getline(iss, pass);
+    pass = trim(pass);
+
+    // Check if the channel already exists
+    std::map<std::string, Channel>::iterator it = channels.find(channelName);
+    if (it != channels.end()) 
+    {
+        // Channel already exists
+        if ((isinvited == 1 && channels[channelName].isInvited(nick)) || channels[channelName].isOperator(fd))
+        {
+            // User is invited, create the channel
+            int check = channels[channelName].getChannelLimit();
+            if (limitchannelforincrement < check || channelLimit == 0)
+                createChannel(channelName, nick, fd);
+            else {
+                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL limit\r\n";
+                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+            }
+        } 
+        else if (isinvited == 0) {
+            if (itHasPass == 1 && channels[channelName].getPass() == pass) {
+                int check = channels[channelName].getChannelLimit();
+                if (limitchannelforincrement < check || channelLimit == 0)
+                    createChannel(channelName, nick, fd);
+                else {
+                    std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL limit\r\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                }
+            }
+            else if (itHasPass == 0) {
+                int check = channels[channelName].getChannelLimit();
+                if (limitchannelforincrement < check || channelLimit == 0)
+                    createChannel(channelName, nick, fd);
+                else {
+                    std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL limit\r\n";
+                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+                }
+            } else if (itHasPass == 1 && channels[channelName].getPass() != pass)
+            {
+                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you need a password for this channel\r\n";
+                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+            }
+
+        }
+        else {
+            // User is not invited, send error message
+            std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you are not invited\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        }
+    } 
+    else 
+        createChannel(channelName, nick, fd);
+}
+
+void Server::processPrivmsgCmd(Client& client, const std::string& command, int fd)
+{
+    std::istringstream iss(command);
+    std::string cmd, recipient, message;
+    std::string niiick;
+    
+    iss >> cmd >> recipient;
+    recipient = trim(recipient);
+    std::getline(iss, message);
+    
+    if (iss.fail()) {
+        std::string errorMessage = "Error: You Just missing an argument(5)\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+    
+    message = trim(message);
+    message = message.substr(1);
+    if (recipient[0] == '#') {
+        recipient = recipient.substr(1);
+        for (size_t i = 0; i < _clients.size(); ++i) {
+            if (_clients[i].getFd() == fd) {
+                niiick =  _clients[i].getNick();
+                break;
+            }
+        }
+        broadcastMessage(recipient, niiick, message);
+    }
+    else {
+        handlePrivateMessage(fd, recipient, message);
+    }
+}
+
+void Server::processQuitCmd(int fd) {
+    cleanChannel(fd);
+    clientCleanup(fd);
+    std::cout << "Client <" << fd << "> Disconnected" << std::endl;
+}
+
+void Server::processKickCmd(Client& client, const std::string& command, int fd)
+{
+    std::string channelName, userToKick, reason;
+    std::istringstream iss(command.substr(5));
+    iss >> channelName >> userToKick;  
+
+    if (iss.fail()) {
+        std::string errorMessage = "Error: You Just missing an argument(4)\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+
+    std::getline(iss, reason);
+    channelName = channelName.substr(1);
+    channelName = trim(channelName);
+    userToKick = trim(userToKick);
+    reason = trim(reason);
+
+    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+        int userFd = channels[channelName].findUserFdForKickRegulars(userToKick);
+        if (userFd != -1) {
+            channels[channelName].ejectUserfromusers(userFd);
+            channels[channelName].ejectUserfromivited(userToKick);
+            std::string kickMessage = ":" + channels[channelName].getNickname(fd) + " KICK #" + channelName + " " + userToKick + " :" + reason + "\n";
+            smallbroadcastMessagefortheckick(channels[channelName].getNickname(fd), channelName, userToKick, reason);
+            send(fd, kickMessage.c_str(), kickMessage.length(), 0);
+            send(userFd , kickMessage.c_str(), kickMessage.length(), 0);
+        } 
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: the user : " + userToKick + " is not found or offline." + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+    else {
+        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error1: You are not authorized to execute this command " + userToKick + "\r\n";
+        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+    }
+}
+
+void Server::processTopicCmd(Client& client, const std::string& command, int fd)
+{
+    std::string channelName, topic;
+    std::istringstream iss(command.substr(6));
+    iss >> channelName;
+    std::getline(iss, topic);
+    
+    if (iss.fail()) {
+        std::string errorMessage = "Error: You Just missing an argument(3)\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+    
+    channelName = channelName.substr(1);
+    channelName = trim(channelName);
+    topic = trim(topic);
+    topic = topic.substr(1);
+    
+    if ((channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) || issettop == 1) {
+        channels[channelName].setTopic(topic);
+        std::string topicMessage = ":" + channels[channelName].getNickname(fd) + " TOPIC #" + channelName + " :" + topic + "\n";
+        send(fd, topicMessage.c_str(), topicMessage.size(), 0);
+        smallbroadcastMessageforTopic(channels[channelName].getNickname(fd), channelName, topic );
+    }
+    else {
+        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error2: You are not authorized to execute this command " + "\r\n";
+        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+    }
+}
+
+void Server::processInviteCmd(Client& client, const std::string& command, int fd) {
+    std::string channelName, nickname;
+    std::istringstream iss(command.substr(7));
+    iss >> nickname >> channelName;
+    
+    if (iss.fail()) {
+        std::string errorMessage = "Error: You Just missing an argument(2)\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+
+    channelName = trim(channelName);
+    nickname = trim(nickname);
+    channelName = channelName.substr(1);
+    
+    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+        channels[channelName].addClientinveted(nickname, fd);
+        handleInvitation(fd, nickname, channelName);
+    }
+    else {
+        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error3: You are not authorized to execute this command " + "\r\n";
+        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+    }
+}
+
+void Server::processBotCmd(Client& client, const std::string& command, int fd) {
+    std::string start, end, guessed;
+    std::istringstream iss(command.substr(4));
+    iss >> start >> end >> guessed;
+    std::string reme;
+    
+    if (iss.fail() || iss >> reme)
+    {
+        std::string errorMessage = "Error: Command take 3 parameters\n";
+        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
+        client.clearCommand();
+        return;
+    }
+    
+    start = trim(start);
+    end = trim(end);
+    guessed = trim(guessed);
+    
+    if (stringToInt(start) < stringToInt(end) && stringToInt(guessed) >= stringToInt(start) && stringToInt(guessed) <= stringToInt(end)) {
+        int r = randomInRange(stringToInt(start), stringToInt(end));
+        std::string random = intToString(r);
+        if (random == guessed) {
+            std::string modeChangeMessage = ":server.host PRIVMSG #:Congratulations ,you have guessed the number : " + guessed + " correctly\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+        }
+        else {
+            std::string modeChangeMessage = ":server.host PRIVMSG #:Sorry ,the correct one is : " + random + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+        }
+    }
+    else {
+        std::string errorMessage = ":server.host PRIVMSG # :Error: Invalid range or guess\n";
+        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+    }
+}
+
+void Server::handleOpPrivilege(const std::string& nick, const std::string& channelName, const std::string& mode, int fd) {
+    if (mode == "+o") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            channels[channelName].addOperator(nick, channels[channelName].getUserFd(nick));
+            abaaba = channels[channelName].getUserFd(nick);
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and set " + nick + " as operator\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+    else if (mode == "-o") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            channels[channelName].removeOperator(nick);
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and unset " + nick + " as operator\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+}
+
+void Server::handleTopicRestriction(const std::string& nick, const std::string& channelName, const std::string& mode, int fd) {
+    if (mode == "-t") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            issettop = 1;
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+    else if (mode == "+t") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            issettop = 0;
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+}
+
+void Server::handleInviteOnly(const std::string& nick, const std::string& channelName, const std::string& mode, int fd) {
+    if (mode == "+i") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " +i by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            isinvited = 1;
+            
+        }
+        else if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd) == false) {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error5: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+        
+    }
+    else if (mode == "-i") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " -i by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            isinvited = 0;
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+}
+
+void Server::handleChannelKey(std::string& nick, const std::string& channelName, const std::string& mode, int fd) {
+    if (mode == "-k") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " -k by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            itHasPass = 0;
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error7: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+    else if (mode == "+k") {
+        nick = trim(nick);
+        channels[channelName].setPass(nick);
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " +k by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            itHasPass = 1;
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error8: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+}
+
+void Server::handleChannelLimit(const std::string& nick, const std::string& channelName, const std::string& mode, int fd) {
+    if (mode == "+l") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            int limit = stringToInt(nick);
+            channels[channelName].setlimitchannel(limit);
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " +l by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            channelLimit = 1;
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+    else if (mode == "-l") {
+        if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) {
+            std::string modeChangeMessage = ":server.host MODE #" + channelName + " -l by " + channels[channelName].getNickname(fd) + "\n";
+            send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
+            smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
+            channelLimit = 0;
+            limitchannelforincrement = 0;
+        }
+        else {
+            std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
+            send(fd, errorMessage.c_str(), errorMessage.size(), 0);
+        }
+    }
+}
+
+void Server::processModeCmd(Client& client, const std::string& command, int fd) {
+    std::string channelName, mode , nick;
+    std::istringstream iss(command.substr(5));
+    iss >> channelName >> mode >> nick;
+    
+    if (channelName[0] != '#') {
+        client.clearCommand();
+        return;
+    }
+    
+    channelName = channelName.substr(1);
+    channelName = trim(channelName);
+    mode = trim(mode);
+    size_t opt = mode.length() - 1;
+
+    if (mode[opt] == 'o')
+        handleOpPrivilege(nick, channelName, mode, fd);
+    else if (mode[opt] == 't')
+        handleTopicRestriction(nick, channelName, mode, fd);
+    else if (mode[opt] == 'i')
+        handleInviteOnly(nick, channelName, mode, fd);
+    else if (mode[opt] == 'k')
+        handleChannelKey(nick, channelName, mode, fd);
+    else if (mode[opt] == 'l')
+        handleChannelLimit(nick, channelName, mode, fd);
+}
 
 void Server::handleClientData(int fd)
 {
     Client& client = getClientByFd(fd); 
-
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, sizeof(buffer));
 
     ssize_t bytesRead = recv(fd, buffer, BUFFER_SIZE - 1, 0);
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0';
-
         client.appendCommand(buffer);
-
         size_t newlinePos = client.getCommand().find_first_of("\r\n");
         if (newlinePos != std::string::npos) {
             std::string command = client.getCommand().substr(0, newlinePos);
@@ -540,585 +1026,31 @@ void Server::handleClientData(int fd)
             std::cout << "Received data from client " << fd << ": " << command << std::endl;
             int auth = client.getAuthentication();
 
-            if ((startsWith(command, "pass ") || startsWith(command, "PASS ")) && auth == 0)
-            {
-                std::string passwordLine = command.substr(command.find(" ") + 1);
-                 passwordLine = trim(passwordLine);
-
-                 if (!passwordLine.empty() && ((passwordLine[0] == '"' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '"') ||
-                                               (passwordLine[0] == '\'' && passwordLine.size() > 1 && passwordLine[passwordLine.size() - 1] == '\'')))
-                 {
-                     passwordLine = passwordLine.substr(1, passwordLine.size() - 2);
-                 }
-
-                if (passwordLine.empty())
-                {
-                     std::string errorMessage = "Error: Password cannot be empty\n";
-                     send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                     client.clearCommand();
-                     return;
-                }
-                std::string  passwordoftheserver = getPassowrd();
-                if (passwordoftheserver != passwordLine)
-                {
-                    std::string errorMessage = "Error: Incorrect Password\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                }
-                else {
-                    std::string confirmation = "Please Enter Your Nickname : \n";
-                    send(fd, confirmation.c_str(), confirmation.length(), 0);
-                    client.setAuthentication(1);
-                }
-            }
-            else if (startsWith(command, "QUIT"))
-            {
-                cleanChannel(fd);
-                clientCleanup(fd);
-            }
-            else if (startsWith(command, "PING"))
-            {
-                std::istringstream iss(command);
-                std::string serverHostname = command.substr(5);
-                std::string pongMessage = "PONG " + serverHostname + "\r\n";
-                send(fd, pongMessage.c_str(), pongMessage.length(), 0);
-                std::cout << "ping was sent" << std::endl;
-            }
-
-            else if ((startsWith(command, "nick ") || startsWith(command, "NICK ")) && auth == 1) 
-            {
-                std::string cmd, nick;
-                std::istringstream iss(command);
-                iss >> cmd >> nick;
-                nick = trim(nick);
-
-                // Check if there are more tokens after the nickname
-                std::string remaining;
-                if (iss >> remaining)
-                {
-                    std::string errorMessage = "Error: Command requires only 1 parameter\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    client.clearCommand();
-                    return;
-                }
-
-                // Validate the nickname
-                if (dontputthesamenick(nick))
-                {
-                    std::string confirmation = "Please Use a Different Nickname : \n";
-                    send(fd, confirmation.c_str(), confirmation.length(), 0);
-                }
-                else
-                {
-                    setNickname(fd, nick);
-                    for (size_t i = 0; i < _clients.size(); ++i)
-                    {
-                        if (_clients[i].getFd() == fd)
-                        {
-                            _clients[i].setNick(nick);
-                            std::cout << "Nickname set for client " << fd << ": " << nick << std::endl;
-                            break;
-                        }
-                    }
-                    std::string confirmation = "Please Enter Your Username : \n";
-                    send(fd, confirmation.c_str(), confirmation.length(), 0);
-                    client.setAuthentication(2);
-                }
-            }
-
-            else if ((startsWith(command, "user") || startsWith(command, "USER")) && auth == 2) 
-            {
-
-                std::istringstream iss(command);
-                std::string cmd, username, dontworry, dontworry1, realname, nickname;
-                iss >> cmd >> username >> dontworry >> dontworry1 >> realname;
-                username = trim(username);
-                dontworry = trim(dontworry);
-                dontworry1 = trim(dontworry1);
-                realname = trim(realname);
-
-                std::string reme;
-                if (iss.fail() || iss >> reme)
-                {
-                    std::string errorMessage = "Error: Command requires at least four parameters\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    client.clearCommand();
-                    return;
-                }
-                if (dontputthesameusername(username) == true)
-                {
-                    std::string confirmation = "Please Use a Different username : \n";
-                    send(fd, confirmation.c_str(), confirmation.length(), 0);
-                }
-                else
-                {
-                    setUsernames(fd, username);
-
-                    for (size_t i = 0; i < _clients.size(); ++i)
-                    {
-                        if (_clients[i].getFd() == fd)
-                        {
-                            _clients[i].setUser(username);
-                            _clients[i].setName(realname);
-                            nickname = _clients[i].getNick();
-                            break;
-                        }
-                    }
-
-                    std::string one = ":irc.l9oroch 001 " + nickname + " :Welcome to the TopG Network, " + nickname + '\n';
-                    std::string two = ":irc.l9oroch 002 " + nickname + " :Your host is TopG, running version 4.5" + '\n';
-                    std::string tre = ":irc.l9oroch 003 " + nickname + " :This server was created " + formatCreationTime() + '\n';
-                    std::string foor = ":irc.l9oroch 004 " + nickname + " TopG TopG(enterprise)-2.3(12)-netty(5.4c)-proxy(0.9) TopG TopG TopG" + '\n';
-                    send(fd, one.c_str(), one.length(), 0);
-                    send(fd, two.c_str(), two.length(), 0);
-                    send(fd, tre.c_str(), tre.length(), 0);
-                    send(fd, foor.c_str(), foor.length(), 0);
-
-                }
-
-            } 
-            
-           else if (startsWith(command, "JOIN ") || startsWith(command, "join ")) {
-                std::string nick;
-                for (size_t i = 0; i < _clients.size(); ++i) {
-                    if (_clients[i].getFd() == fd) {
-                        nick = _clients[i].getNick();
-                        break;
-                    }
-                }
-                std::string channelName, pass ;
-                std::istringstream iss(command.substr(5));
-                iss >> channelName ;
-                if (channelName[0] != '#')
-                {
-                    std::string errorMessage = ":server.host NOTICE " + nick + " :Error: Channel start with #\r\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    client.clearCommand();
-                    return;
-                    
-                }
-                channelName = channelName.substr(1);
-                channelName = trim(channelName);
-                std::getline(iss, pass);
-                pass = trim(pass);
-
-                // Check if the channel already exists
-                std::map<std::string, Channel>::iterator it = channels.find(channelName);
-                if (it != channels.end()) 
-                {
-                    // Channel already exists
-                    if ((isinveted == 1 && channels[channelName].isInvited(nick)) || channels[channelName].isOperator(fd))
-                    {
-                        // User is invited, create the channel
-                            int check = channels[channelName].getlimitechannel();
-                            if (limitechannelforincriment < check || limitechannel == 0)
-                                createChannel(channelName, nick, fd);
-                            else
-                            {
-                                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL LIMITE\r\n";
-                                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                            }
-                    } 
-                    else if (isinveted == 0)
-                    {
-                        if (itHasPass == 1 && channels[channelName].getPass() == pass)
-                        {
-                            int check = channels[channelName].getlimitechannel();
-                            if (limitechannelforincriment < check || limitechannel == 0)
-                                createChannel(channelName, nick, fd);
-                            else
-                            {
-                                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL LIMITE\r\n";
-                                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                            }
-                        }
-                        else if (itHasPass == 0)
-                        {
-                            int check = channels[channelName].getlimitechannel();
-                            if (limitechannelforincriment < check || limitechannel == 0)
-                                createChannel(channelName, nick, fd);
-                            else
-                            {
-                                std::string errorMessage = ":server.host NOTICE " + nick + " :Error: CHANNEL LIMITE\r\n";
-                                send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                            }
-                        }
-                        else if (itHasPass == 1 && channels[channelName].getPass() != pass)
-                        {
-                            std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you need a password for this channel\r\n";
-                            send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                        }
-
-                    }
-                    else
-                    {
-                        // User is not invited, send error message
-                        std::string errorMessage = ":server.host NOTICE " + nick + " :Error: you are not invited\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    }
-
-                } 
-                else 
-                    createChannel(channelName, nick, fd);
-
-            } 
-            else if (startsWith(command, "PRIVMSG ") || startsWith(command, "privmsg ")) 
-            {
-                    std::istringstream iss(command);
-                    std::string cmd, recipient, message;
-                    std::string niiick;
-                    iss >> cmd >> recipient;
-                    recipient = trim(recipient);
-                    std::getline(iss, message);
-                    if (iss.fail())
-                    {
-                        std::string errorMessage = "Error: You Just missing an argument(5)\n";
-                        send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                        client.clearCommand();
-                        return;
-                    }
-                    message = trim(message);
-                    message = message.substr(1);
-                    if (recipient[0] == '#')
-                    {
-
-                        recipient = recipient.substr(1);
-                        std::cout << "this the chanel name and was good : " << recipient << std::endl;
-                        for (size_t i = 0; i < _clients.size(); ++i)
-                        {
-                            if (_clients[i].getFd() == fd)
-                            {
-                                niiick =  _clients[i].getNick();
-                                break;
-                            }
-                        }
-                        broadcastMessage(recipient, niiick, message);
-                    }
-                    else
-                    {
-                        handlePrivateMessage(fd, recipient, message);
-                    }
-            }
-
-
+            if ((startsWith(command, "PASS ") || startsWith(command, "pass ")) && auth == 0)
+                processPassword(client, command, fd);
+            else if ((startsWith(command, "NICK ") || startsWith(command, "nick ")) && auth == 1)
+                processNickCmd(client, command, fd);
+            else if ((startsWith(command, "USER ") || startsWith(command, "user ")) && auth == 2)
+                processUserCmd(client, command, fd);
+            else if (startsWith(command, "JOIN ") || startsWith(command, "join "))
+                processJoinCmd(client, command, fd);
+            else if (startsWith(command, "PRIVMSG ") || startsWith(command, "privmsg "))
+                processPrivmsgCmd(client, command, fd);
             else if (startsWith(command, "KICK ") || startsWith(command, "kick "))
-            {
-                std::string channelName, userToKick, reason;
-                std::istringstream iss(command.substr(5));
-                iss >> channelName >> userToKick;  
-                if (iss.fail())
-                {
-                    std::string errorMessage = "Error: You Just missing an argument(4)\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    client.clearCommand();
-                    return;
-                }
-                std::getline(iss, reason);
-                channelName = channelName.substr(1);
-                channelName = trim(channelName);
-                userToKick = trim(userToKick);
-                reason = trim(reason);
-
-                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                {
-                    int userFd = channels[channelName].findUserFdForKickRegulars(userToKick);
-                    if (userFd != -1) 
-                    {
-                        channels[channelName].ejectUserfromusers(userFd);
-                        channels[channelName].ejectUserfromivited(userToKick);
-                        std::string kickMessage = ":" + channels[channelName].getNickname(fd) + " KICK #" + channelName + " " + userToKick + " :" + reason + "\n";
-                        smallbroadcastMessagefortheckick(channels[channelName].getNickname(fd), channelName, userToKick, reason);
-                        send(fd, kickMessage.c_str(), kickMessage.length(), 0);
-                        send(userFd , kickMessage.c_str(), kickMessage.length(), 0);
-                    } 
-                    else 
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: the user : " + userToKick + " is not found or offline." + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else 
-                {
-                    std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error1: You are not authorized to execute this command " + userToKick + "\r\n";
-                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                }
-            }
-
-
+                processKickCmd(client, command, fd);
             else if (startsWith(command, "TOPIC ") || startsWith(command, "topic "))
-            {
-                std::string channelName, topic;
-                std::istringstream iss(command.substr(6));
-                iss >> channelName;
-                std::getline(iss, topic);
-                if (iss.fail())
-                {
-                    std::string errorMessage = "Error: You Just missing an argument(3)\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    client.clearCommand();
-                    return;
-                }
-                channelName = channelName.substr(1);
-                channelName = trim(channelName);
-                topic = trim(topic);
-                topic = topic.substr(1);
-
-                if ((channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd)) || issettop == 1)
-                {
-                    channels[channelName].setTopic(topic);
-                    std::string topicMessage = ":" + channels[channelName].getNickname(fd) + " TOPIC #" + channelName + " :" + topic + "\n";
-                    send(fd, topicMessage.c_str(), topicMessage.size(), 0);
-                    smallbroadcastMessageforTopic(channels[channelName].getNickname(fd), channelName, topic );
-                }
-                else
-                {
-                    std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error2: You are not authorized to execute this command " + "\r\n";
-                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                }
-
-
-            }
-
+                processTopicCmd(client, command, fd);
             else if (startsWith(command, "INVITE ") || startsWith(command, "invite "))
-            {
-                std::string channelName, nickname;
-                std::istringstream iss(command.substr(7));
-                iss >> nickname >> channelName;
-                if (iss.fail())
-                {
-                    std::string errorMessage = "Error: You Just missing an argument(2)\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    client.clearCommand();
-                    return;
-                }
-                channelName = trim(channelName);
-                nickname = trim(nickname);
-                channelName = channelName.substr(1);
-                if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                {
-                    channels[channelName].addClientinveted(nickname, fd);
-                    handleInvitation(fd, nickname, channelName);
-                }
-                else
-                {
-                    std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error3: You are not authorized to execute this command " + "\r\n";
-                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                }
-            }
-
+                processInviteCmd(client, command, fd);
             else if (startsWith(command, "BOT ") || startsWith(command, "bot "))
-            {
-                std::string start, end, guessed;
-                std::istringstream iss(command.substr(4));
-                iss >> start >> end >> guessed;
-                std::string reme;
-                if (iss.fail() || iss >> reme)
-                {
-                    std::string errorMessage = "Error: Command take 3 parameters\n";
-                    send(fd, errorMessage.c_str(), errorMessage.length(), 0);
-                    client.clearCommand();
-                    return;
-                }
-                start = trim(start);
-                end = trim(end);
-                guessed = trim(guessed);
-                if (stringToInt(start) < stringToInt(end) && stringToInt(guessed) >= stringToInt(start) && stringToInt(guessed) <= stringToInt(end))
-                {
-                    int r = randomInRange(stringToInt(start), stringToInt(end));
-                    std::string random = intToString(r);
-                    if (random == guessed)
-                    {
-                        std::string modeChangeMessage = ":server.host PRIVMSG #:Congratulations ,you have guessed the number : " + guessed + " correctly\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                    }
-                    else
-                    {
-                        std::string modeChangeMessage = ":server.host PRIVMSG #:Sorry ,the correct one is : " + random + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                    }
-                }
-                else 
-                {
-                    std::string errorMessage = ":server.host PRIVMSG # :Error: Invalid range or guess\n";
-                    send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                }
-            }
+                processBotCmd(client, command, fd);
             else if (startsWith(command, "MODE ") || startsWith(command, "mode "))
-            {
-                std::string channelName, mode , nick;
-                
-                std::istringstream iss(command.substr(5));
-                iss >> channelName >> mode >> nick;
-                if (channelName[0] != '#')
-                {
-                    client.clearCommand();
-                    return;
-                }
-                channelName = channelName.substr(1);
-                channelName = trim(channelName);
-                mode = trim(mode);
-                std::cout << "this is the mode : " << mode << std::endl;
-                if (mode == "+o")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        channels[channelName].addOperator(nick, channels[channelName].getUserFd(nick));
-                        abaaba = channels[channelName].getUserFd(nick);
-
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and set " + nick + " as operator\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-
-                }
-                else if (mode == "-o")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        channels[channelName].removeOperator(nick);
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + " and unset " + nick + " as operator\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else if (mode == "-t")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        issettop = 1;
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else if (mode == "+t")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " " + mode + " by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        issettop = 0;
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else if (mode == "+i")
-                {
-
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +i by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        isinveted = 1;
-                        
-                    }
-                    else if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd) == false)
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error5: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                    
-                }
-                else if (mode == "-i")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " -i by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        isinveted = 0;
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else if (mode == "-k")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " -k by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        itHasPass = 0;
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error7: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else if (mode == "+k")
-                {
-                    nick = trim(nick);
-                    channels[channelName].setPass(nick);
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +k by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        itHasPass = 1;
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error8: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else if (mode == "+l")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        int limit = stringToInt(nick);
-                        channels[channelName].setlimitchannel(limit);
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " +l by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        limitechannel = 1;
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-                else if (mode == "-l")
-                {
-                    if (channels.find(channelName) != channels.end() && channels[channelName].isOperator(fd))
-                    {
-                        std::string modeChangeMessage = ":server.host MODE #" + channelName + " -l by " + channels[channelName].getNickname(fd) + "\n";
-                        send(fd, modeChangeMessage.c_str(), modeChangeMessage.size(), 0);
-                        smallbroadcastMOOD(channels[channelName].getNickname(fd), channelName, mode, nick);
-                        limitechannel = 0;
-                        limitechannelforincriment = 0;
-                    }
-                    else
-                    {
-                        std::string errorMessage = ":" + channels[channelName].getNickname(fd) + " PRIVMSG #" + channelName + " :Error6: You are not authorized to execute this command " + "\r\n";
-                        send(fd, errorMessage.c_str(), errorMessage.size(), 0);
-                    }
-                }
-            }   
+                processModeCmd(client, command, fd);
+            else if (startsWith(command, "QUIT") || startsWith(command, "quit"))
+                processQuitCmd(fd);
+            else if (startsWith(command, "PING"))
+                ping(command, fd);
+            
             client.clearCommand();
         }
     }
@@ -1160,16 +1092,16 @@ Client& Server::getClientByFd(int fd) {
     return _clients[i];
 }
 
-int randomInRange(int min, int max) {
-  if (min > max) {
-    return -1; 
-  }
+int randomInRange(int min, int max)
+{
+    if (min > max) {
+        return -1;
+    }
 
-  int range_size = max - min + 1;
+    int range_size = max - min + 1;
+    double random_double = (double)rand() / (RAND_MAX + 1.0) * range_size;
 
-  double random_double = (double)rand() / (RAND_MAX + 1.0) * range_size;
-
-  return (int)random_double + min;
+    return (int)random_double + min;
 }
 
 void Server::closeFds()
@@ -1191,18 +1123,17 @@ void Server::cleanChannel(int fd) {
     {
         Channel& channel = it->second;
         std::string nickname = channel.getNickname(fd);
-        // Check if the user is part of the channel
-        if (channel.isUserInChannel(nickname))
-        {
-            // Mark the user as disconnected in the channel
+        if (channel.isUserInChannel(nickname)) {
             channel.ejectUserfromusers(fd);
         }
     }
+    
     std::map<int, std::string>::iterator userIt;
     userIt = usernames.find(fd);
     if (userIt != usernames.end()) {
         usernames.erase(userIt);
     }
+    
     std::map<int, std::string>::iterator nickIt;
     nickIt = nicknames.find(fd);
     if (nickIt != nicknames.end()) {
@@ -1211,23 +1142,23 @@ void Server::cleanChannel(int fd) {
     
     for (std::map<std::string, Channel>::iterator it = channels.begin(); it != channels.end(); ++it) {
         std::map<std::string, int> &usersfdmap = it->second.getUserFdMap();
-        for (std::map<std::string, int>::iterator it3 = usersfdmap.begin(); it3 != usersfdmap.end(); ++it3) {
-            if (it3->second == fd)
-                usersfdmap.erase(it3);
+        for (std::map<std::string, int>::iterator it2 = usersfdmap.begin(); it2 != usersfdmap.end(); ++it2) {
+            if (it2->second == fd)
+                usersfdmap.erase(it2);
         }
     }
     for (std::map<std::string, Channel>::iterator it1 = channels.begin(); it1 != channels.end(); ++it1) {
         std::map<std::string, int> &invitedusrmap = it1->second.invitedUserss();
-        for (std::map<std::string, int>::iterator it3 = invitedusrmap.begin(); it3 != invitedusrmap.end(); ++it3) {
-            if (it3->second == fd)
-                invitedusrmap.erase(it3);
+        for (std::map<std::string, int>::iterator it2 = invitedusrmap.begin(); it2 != invitedusrmap.end(); ++it2) {
+            if (it2->second == fd)
+                invitedusrmap.erase(it2);
         }
     }
     for (std::map<std::string, Channel>::iterator it2 = channels.begin(); it2 != channels.end(); ++it2) {
         std::map<std::string, int> &operatorsmap = it2->second.getOperators();
-        for (std::map<std::string, int>::iterator it3 = operatorsmap.begin(); it3 != operatorsmap.end(); ++it3) {
-            if (it3->second == fd)
-                operatorsmap.erase(it3);
+        for (std::map<std::string, int>::iterator it2 = operatorsmap.begin(); it2 != operatorsmap.end(); ++it2) {
+            if (it2->second == fd)
+                operatorsmap.erase(it2);
         }
     }
 }

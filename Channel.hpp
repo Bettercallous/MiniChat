@@ -1,12 +1,11 @@
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
 
-
 #include <sstream>
 #include <algorithm>
 #include <cctype>
-#include <unistd.h> // Include for the send function
-#include <cstring> // Include for the strlen function
+#include <unistd.h>
+#include <cstring>
 #include <iostream>
 #include <cstdlib>
 #include <csignal>
@@ -25,11 +24,10 @@ private:
     std::string topic;
     std::string key;
     std::string pass;
-    int limite;
+    int limit;
     std::map<std::string, int> userFdMap; 
     std::map<std::string, int> invitedUsers;
     std::map<std::string, int>  operators;
-    bool channelconnect;
 
 public:
 
@@ -39,7 +37,7 @@ public:
     void setTopic(const std::string& newTopic);
     std::string getTopic() const;
     void setlimitchannel(int value);
-    int getlimitechannel();
+    int getChannelLimit();
 
 
     void addClient(const std::string& client, int fd);
@@ -65,8 +63,5 @@ public:
     std::map<std::string, int>& invitedUserss();
     std::map<std::string, int>& getOperators();
 };
-
-
-
 
 #endif
