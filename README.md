@@ -37,7 +37,7 @@
 ## 💡 Introduction : <a name="intro"></a>
 
 <p align="left">
-This test project is dedicated to exploring the complex workings of sockets and their interactions within the framework of an IRC chat/server• The primary goal is to replicate the functionality of an IRC server, offering a comprehensive understanding of its operation.
+This test project is dedicated to exploring the complex workings of sockets and their interactions within the framework of an IRC chat/server. The primary goal is to replicate the functionality of an IRC server, offering a comprehensive understanding of its operation.
 </p>
 
 ## What is IRC ? <a name="what"></a>
@@ -113,7 +113,7 @@ And that's it! Now you can join channels and send private messages in the server
 
 ---
 
-## What is is a Socket ?  <a name="socket"></a>
+## What is a Socket ?  <a name="socket"></a>
 - A socket is an end-point of communication between 2 devices (or processes).
 - For 2 computers to send and receive a message over a network, they need to have a socket at both ends.
 - A socket is identified by an IP address concatenated with a port number. example ( 146.86.5.20:1625 ).
